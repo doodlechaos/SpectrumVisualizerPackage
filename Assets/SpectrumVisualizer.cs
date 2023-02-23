@@ -33,7 +33,8 @@ public class SpectrumVisualizer : MonoBehaviour
 
 
     private LineRenderer lr;
-    private Transform BarsRoot;
+    private Transform BarOriginsRoot;
+    private Transform BarRigidbodiesRoot;
     private Transform PurgatoryRoot;
 
     [SerializeField] private bool testButton;
@@ -43,34 +44,43 @@ public class SpectrumVisualizer : MonoBehaviour
         if (testButton)
         {
             testButton = false;
-            BarsRoot.localScale = Vector3.one;
+            BarOriginsRoot.localScale = Vector3.one;
         }
         //Build the roots if they don't exist yet
-        if (transform.childCount <= 0 || transform.GetChild(0).name != "BarsRoot")
+        if (transform.childCount <= 0 || transform.GetChild(0).name != "BarOriginsRoot")
         {
-            GameObject BarsRootObj = new GameObject("BarsRoot");
-            BarsRoot = BarsRootObj.transform;
-            BarsRoot.position = Vector3.zero;
-            BarsRoot.localScale = Vector3.one;
-            BarsRoot.SetParent(transform);
+            BarOriginsRoot = new GameObject("BarOriginsRoot").transform;
+            BarOriginsRoot.position = Vector3.zero;
+            BarOriginsRoot.localScale = Vector3.one;
+            BarOriginsRoot.SetParent(transform);
 
-            Debug.Log("BarsRootObj.transform.localScale: " + BarsRootObj.transform.localScale);
         }
         else
         {
-            BarsRoot = transform.GetChild(0); 
+            BarOriginsRoot = transform.GetChild(0); 
         }
-        if (transform.childCount <= 1 || transform.GetChild(1).name != "PurgatoryRoot")
+        //Build the roots if they don't exist yet
+        if (transform.childCount <= 1 || transform.GetChild(1).name != "BarRigidbodiesRoot")
         {
-            GameObject PurgatoryRootObj = new GameObject("PurgatoryRoot");
-            PurgatoryRoot = PurgatoryRootObj.transform;
+            BarRigidbodiesRoot = new GameObject("BarRigidbodiesRoot").transform;
+            BarRigidbodiesRoot.position = Vector3.zero;
+            BarRigidbodiesRoot.localScale = Vector3.one;
+            BarRigidbodiesRoot.SetParent(transform);
+        }
+        else
+        {
+            BarRigidbodiesRoot = transform.GetChild(1);
+        }
+        if (transform.childCount <= 2 || transform.GetChild(2).name != "PurgatoryRoot")
+        {
+            PurgatoryRoot = new GameObject("PurgatoryRoot").transform;
             PurgatoryRoot.SetParent(transform);
-            PurgatoryRootObj.transform.position = Vector3.zero;
-            PurgatoryRootObj.transform.localScale = Vector3.one;
+            PurgatoryRoot.transform.position = Vector3.zero;
+            PurgatoryRoot.transform.localScale = Vector3.one;
         }
         else
         {
-            PurgatoryRoot = transform.GetChild(1); 
+            PurgatoryRoot = transform.GetChild(2); 
         }
 
         //Check if the input mode changed
@@ -94,13 +104,14 @@ public class SpectrumVisualizer : MonoBehaviour
 
         CreateAndDestroyNecessaryBars();
 
-        SetBarOrigins();
+        //SetBarOrigins();
+        UpdateBarOriginTransforms();
 
         if (barWidth != prevBarWidth)
         {
-            foreach(var bar in BarsRoot.GetComponentsInChildren<Transform>())
+            foreach(var bar in BarRigidbodiesRoot.GetComponentsInChildren<Transform>())
             {
-                if (bar == BarsRoot) //Don't change the scale of the root!
+                if (bar == BarRigidbodiesRoot) //Don't change the scale of the root!
                     continue;
                 bar.localScale = new Vector3(barWidth, bar.localScale.y, bar.localScale.z);
             }
@@ -112,22 +123,25 @@ public class SpectrumVisualizer : MonoBehaviour
         //Clamp Value from going negative
         if (totalBars < 0) { totalBars = 0; }
 
-        while (BarsRoot.childCount < totalBars)
+        while (BarOriginsRoot.childCount < totalBars)
         {
-            GameObject barOrigin = new GameObject("barOrigin");
+            GameObject barOrigin = new GameObject("barOrigin" + BarOriginsRoot.childCount);
             barOrigin.transform.localScale = Vector3.one;
             barOrigin.transform.position = Vector3.zero;
+            barOrigin.transform.SetParent(BarOriginsRoot);
+
+
             GameObject newBar = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            newBar.name = "bar" + BarOriginsRoot.childCount;
             newBar.transform.position = new Vector3(0, 0.5f, 0); // move block so that the edge lines up with the bar origin. 
-            newBar.transform.SetParent(barOrigin.transform);
-            barOrigin.transform.SetParent(BarsRoot);
+            newBar.transform.SetParent(BarRigidbodiesRoot);
 
             newBar.AddComponent<Rigidbody>();
             newBar.GetComponent<Rigidbody>().useGravity = true;
 
             newBar.AddComponent<ConfigurableJoint>();
             newBar.GetComponent<ConfigurableJoint>().anchor = Vector3.zero;
-            //newBar.GetComponent<ConfigurableJoint>().autoConfigureConnectedAnchor = false;
+            newBar.GetComponent<ConfigurableJoint>().autoConfigureConnectedAnchor = false;
             newBar.GetComponent<ConfigurableJoint>().xMotion = ConfigurableJointMotion.Limited;
             newBar.GetComponent<ConfigurableJoint>().yMotion = ConfigurableJointMotion.Locked;
             newBar.GetComponent<ConfigurableJoint>().zMotion = ConfigurableJointMotion.Locked;
@@ -140,15 +154,21 @@ public class SpectrumVisualizer : MonoBehaviour
 
 
         }
-        while (BarsRoot.childCount > totalBars)
+        while (BarOriginsRoot.childCount > totalBars)
         {
-            var currBar = BarsRoot.GetChild(BarsRoot.childCount - 1);
+            var currBar = BarOriginsRoot.GetChild(BarOriginsRoot.childCount - 1);
             deathRow.Add(currBar.gameObject);
             currBar.SetParent(PurgatoryRoot);
         }
+        while (BarRigidbodiesRoot.childCount > totalBars)
+        {
+            var currBarRb = BarRigidbodiesRoot.GetChild(BarRigidbodiesRoot.childCount - 1);
+            deathRow.Add(currBarRb.gameObject);
+            currBarRb.SetParent(PurgatoryRoot);
+        }
     }
 
-    private void SetBarOrigins()
+    private void UpdateBarOriginTransforms()
     {
         //Get the total length of the line renderer
         Vector3[] linePoints = new Vector3[lr.positionCount];
@@ -163,25 +183,38 @@ public class SpectrumVisualizer : MonoBehaviour
 
         //TODO: Choose which axis the tangent is on
 
-        for(int b = 0; b < BarsRoot.childCount; b++)
+        for(int b = 0; b < BarOriginsRoot.childCount; b++)
         {
-            var currBar = BarsRoot.GetChild(b);
-            float t = b / (float)BarsRoot.childCount;
+            var currBar = BarOriginsRoot.GetChild(b);
+            float t = b / (float)BarOriginsRoot.childCount;
 
             //Set the bar origin to the correct position
             currBar.transform.position = GetPointOnLineRenderer(lr, totalLineLength, t);
+            Transform currBarRb = BarRigidbodiesRoot.GetChild(b);
+            currBarRb.GetComponent<ConfigurableJoint>().connectedAnchor = currBar.transform.position;
 
             //and rotate it based on the normal to the line at that point
             Vector3 normal = GetNormalOnLineRenderer(lr, totalLineLength, t);
             Debug.DrawRay(currBar.transform.position, normal, Color.green, 15);
-            currBar.GetChild(0).GetComponent<ConfigurableJoint>().axis = normal;
+
+            currBarRb.GetComponent<ConfigurableJoint>().axis = Vector3.up; //normal;
             currBar.transform.LookAt(currBar.transform.position - normal, Vector3.up);
             currBar.transform.Rotate(Vector3.right, 90, Space.Self);
 
+            currBarRb.GetComponent<ConfigurableJoint>().angularXMotion = ConfigurableJointMotion.Free;
+            currBarRb.GetComponent<ConfigurableJoint>().angularYMotion = ConfigurableJointMotion.Free;
+            currBarRb.GetComponent<ConfigurableJoint>().angularZMotion = ConfigurableJointMotion.Free;
+            currBarRb.transform.rotation = currBar.transform.rotation;
+            currBarRb.GetComponent<ConfigurableJoint>().angularXMotion = ConfigurableJointMotion.Locked;
+            currBarRb.GetComponent<ConfigurableJoint>().angularYMotion = ConfigurableJointMotion.Locked;
+            currBarRb.GetComponent<ConfigurableJoint>().angularZMotion = ConfigurableJointMotion.Locked;
         }
-
+    }
+    private void InitializeBarRigidbody()
+    {
 
     }
+
 
     private Vector3 GetNormalOnLineRenderer(LineRenderer lineRenderer, float totalLineLength, float fraction)
     {
@@ -255,18 +288,18 @@ public class SpectrumVisualizer : MonoBehaviour
     {
         float[] spectrumData = new float[visualizerSamples];
 
-        if (BarsRoot == null)
+        if (BarOriginsRoot == null)
             return;
 
         if (audioInputMode == AudioInputMode.LiveListen || audioInputMode == AudioInputMode.Microphone)
         {
             GetComponent<AudioSource>().GetSpectrumData(spectrumData, 0, fttwindow);
             //Move the bars based on the spectrum data
-            for (int i = 0; i < BarsRoot.childCount; i++)
+            for (int i = 0; i < BarOriginsRoot.childCount; i++)
             {
-                var currBar = BarsRoot.GetChild(i);
+                var currBar = BarOriginsRoot.GetChild(i);
                 // t is the percent index of the spectrum data we are sampling. 
-                float t = i /(float) BarsRoot.childCount;
+                float t = i /(float) BarOriginsRoot.childCount;
                 int spectrumIndex = Mathf.FloorToInt(visualizerSamples * t);
                 //Debug.Log("spectrumData.length: " + spectrumData.Length + " SpectrumIndex: " + spectrumIndex);
                 float newYScale = spectrumData[spectrumIndex];
