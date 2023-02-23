@@ -27,9 +27,10 @@ public class SpectrumVisualizer : MonoBehaviour
 
     [SerializeField] private int totalBars;
     [SerializeField] private float barWidth;
+    private float prevBarWidth;
+
     [SerializeField] private float barHeightMultiplier;
 
-    private float prevBarWidth;
 
     private LineRenderer lr;
     private Transform BarsRoot;
@@ -113,8 +114,31 @@ public class SpectrumVisualizer : MonoBehaviour
 
         while (BarsRoot.childCount < totalBars)
         {
+            GameObject barOrigin = new GameObject("barOrigin");
+            barOrigin.transform.localScale = Vector3.one;
+            barOrigin.transform.position = Vector3.zero;
             GameObject newBar = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            newBar.transform.SetParent(BarsRoot);
+            newBar.transform.position = new Vector3(0, 0.5f, 0); // move block so that the edge lines up with the bar origin. 
+            newBar.transform.SetParent(barOrigin.transform);
+            barOrigin.transform.SetParent(BarsRoot);
+
+            newBar.AddComponent<Rigidbody>();
+            newBar.GetComponent<Rigidbody>().useGravity = true;
+
+            newBar.AddComponent<ConfigurableJoint>();
+            newBar.GetComponent<ConfigurableJoint>().anchor = Vector3.zero;
+            //newBar.GetComponent<ConfigurableJoint>().autoConfigureConnectedAnchor = false;
+            newBar.GetComponent<ConfigurableJoint>().xMotion = ConfigurableJointMotion.Limited;
+            newBar.GetComponent<ConfigurableJoint>().yMotion = ConfigurableJointMotion.Locked;
+            newBar.GetComponent<ConfigurableJoint>().zMotion = ConfigurableJointMotion.Locked;
+            newBar.GetComponent<ConfigurableJoint>().angularXMotion = ConfigurableJointMotion.Locked;
+            newBar.GetComponent<ConfigurableJoint>().angularYMotion = ConfigurableJointMotion.Locked;
+            newBar.GetComponent<ConfigurableJoint>().angularZMotion = ConfigurableJointMotion.Locked;
+            SoftJointLimit sjl = new SoftJointLimit();
+            sjl.limit = 3;
+            newBar.GetComponent<ConfigurableJoint>().linearLimit = sjl; 
+
+
         }
         while (BarsRoot.childCount > totalBars)
         {
@@ -150,12 +174,13 @@ public class SpectrumVisualizer : MonoBehaviour
             //and rotate it based on the normal to the line at that point
             Vector3 normal = GetNormalOnLineRenderer(lr, totalLineLength, t);
             Debug.DrawRay(currBar.transform.position, normal, Color.green, 15);
-
-            currBar.transform.LookAt(currBar.transform.position + normal);
+            currBar.GetChild(0).GetComponent<ConfigurableJoint>().axis = normal;
+            currBar.transform.LookAt(currBar.transform.position - normal, Vector3.up);
             currBar.transform.Rotate(Vector3.right, 90, Space.Self);
+
         }
 
-       
+
     }
 
     private Vector3 GetNormalOnLineRenderer(LineRenderer lineRenderer, float totalLineLength, float fraction)
