@@ -4,6 +4,7 @@ using UnityEngine;
 
 [ExecuteInEditMode]
 [RequireComponent(typeof(LineRenderer))]
+[RequireComponent(typeof(AudioSource))]
 public class SpectrumVisualizer : MonoBehaviour
 {
 
@@ -12,11 +13,12 @@ public class SpectrumVisualizer : MonoBehaviour
     [HideInInspector] public AudioClip inputAudio;
     [Space(15), Range(64, 8192)]
 
-    [SerializeField] public int visualizerSimples = 64;
+    [SerializeField] public int visualizerSamples = 64;
     [SerializeField] public FFTWindow fttwindow;
 
     public enum AudioInputMode { AudioFile, LiveListen, Microphone } 
     [HideInInspector] public AudioInputMode audioInputMode;
+    private AudioInputMode previousAudioInputMode;
 
     public enum UpdateMode { ManualUpdate, UpdateEachFrame }
     [SerializeField] public UpdateMode updateMode;
@@ -25,27 +27,62 @@ public class SpectrumVisualizer : MonoBehaviour
 
     [SerializeField] private int totalBars;
     [SerializeField] private float barWidth;
+    [SerializeField] private float barHeightMultiplier;
+
     private float prevBarWidth;
 
     private LineRenderer lr;
     private Transform BarsRoot;
     private Transform PurgatoryRoot;
 
+    [SerializeField] private bool testButton;
+
     private void OnValidate()
     {
-        if(transform.childCount <= 0 || transform.GetChild(0).name != "BarsRoot")
+        if (testButton)
+        {
+            testButton = false;
+            BarsRoot.localScale = Vector3.one;
+        }
+        //Build the roots if they don't exist yet
+        if (transform.childCount <= 0 || transform.GetChild(0).name != "BarsRoot")
         {
             GameObject BarsRootObj = new GameObject("BarsRoot");
-            BarsRootObj.transform.position = Vector3.zero;
             BarsRoot = BarsRootObj.transform;
+            BarsRoot.position = Vector3.zero;
+            BarsRoot.localScale = Vector3.one;
             BarsRoot.SetParent(transform);
+
+            Debug.Log("BarsRootObj.transform.localScale: " + BarsRootObj.transform.localScale);
+        }
+        else
+        {
+            BarsRoot = transform.GetChild(0); 
         }
         if (transform.childCount <= 1 || transform.GetChild(1).name != "PurgatoryRoot")
         {
-            GameObject BarsRootObj = new GameObject("PurgatoryRoot");
-            BarsRootObj.transform.position = Vector3.zero;
-            BarsRoot = BarsRootObj.transform;
-            BarsRoot.SetParent(transform);
+            GameObject PurgatoryRootObj = new GameObject("PurgatoryRoot");
+            PurgatoryRoot = PurgatoryRootObj.transform;
+            PurgatoryRoot.SetParent(transform);
+            PurgatoryRootObj.transform.position = Vector3.zero;
+            PurgatoryRootObj.transform.localScale = Vector3.one;
+        }
+        else
+        {
+            PurgatoryRoot = transform.GetChild(1); 
+        }
+
+        //Check if the input mode changed
+        if(previousAudioInputMode != audioInputMode)
+        {
+            if(audioInputMode == AudioInputMode.Microphone)
+            {
+                string microphoneName = Microphone.devices[0];
+                Debug.Log("Mic name: " + microphoneName);
+                GetComponent<AudioSource>().clip = Microphone.Start(microphoneName, true, 20, AudioSettings.outputSampleRate);
+                GetComponent<AudioSource>().Play();
+            }
+            previousAudioInputMode = audioInputMode; 
         }
 
         if (deathRow == null)
@@ -62,10 +99,12 @@ public class SpectrumVisualizer : MonoBehaviour
         {
             foreach(var bar in BarsRoot.GetComponentsInChildren<Transform>())
             {
+                if (bar == BarsRoot) //Don't change the scale of the root!
+                    continue;
                 bar.localScale = new Vector3(barWidth, bar.localScale.y, bar.localScale.z);
             }
         }
-    }
+    } 
 
     private void CreateAndDestroyNecessaryBars()
     {
@@ -189,15 +228,27 @@ public class SpectrumVisualizer : MonoBehaviour
 
     public void StepUpdate()
     {
-        if(audioInputMode == AudioInputMode.LiveListen)
-        {
-            //audioSource.GetSpectrumData(spectrumData, 0, fttwindow);
-        }
+        float[] spectrumData = new float[visualizerSamples];
+
         if (BarsRoot == null)
             return;
-        for (int i = 0; i < BarsRoot.childCount; i++)
-        {
 
+        if (audioInputMode == AudioInputMode.LiveListen || audioInputMode == AudioInputMode.Microphone)
+        {
+            GetComponent<AudioSource>().GetSpectrumData(spectrumData, 0, fttwindow);
+            //Move the bars based on the spectrum data
+            for (int i = 0; i < BarsRoot.childCount; i++)
+            {
+                var currBar = BarsRoot.GetChild(i);
+                // t is the percent index of the spectrum data we are sampling. 
+                float t = i /(float) BarsRoot.childCount;
+                int spectrumIndex = Mathf.FloorToInt(visualizerSamples * t);
+                //Debug.Log("spectrumData.length: " + spectrumData.Length + " SpectrumIndex: " + spectrumIndex);
+                float newYScale = spectrumData[spectrumIndex];
+                currBar.localScale = new Vector3(currBar.localScale.x, 1 + (newYScale * barHeightMultiplier), currBar.localScale.z);
+            }
         }
+
+
     }
 }
