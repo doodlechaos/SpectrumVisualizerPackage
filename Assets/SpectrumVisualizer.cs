@@ -37,7 +37,7 @@ public class SpectrumVisualizer : MonoBehaviour
 
     [SerializeField] private bool testButton;
 
-    private void OnValidate()
+    public void CustomOnValidate()
     {
         if (testButton)
         {

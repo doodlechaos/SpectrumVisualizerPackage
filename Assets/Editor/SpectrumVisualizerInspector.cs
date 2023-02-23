@@ -19,6 +19,17 @@ public class SpectrumVisualizerInspector : Editor
 
     public override void OnInspectorGUI()
     {
+
+        EditorGUI.BeginChangeCheck();
+
+        base.OnInspectorGUI();
+
+        if (EditorGUI.EndChangeCheck())
+        {
+            var script = target as SpectrumVisualizer;
+            script.CustomOnValidate();
+        }
+    
         GUILayout.Label("This is a Label in a Custom Editor");
 
         var sv = (SpectrumVisualizer)target;
