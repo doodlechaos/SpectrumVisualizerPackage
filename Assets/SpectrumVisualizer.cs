@@ -226,7 +226,11 @@ public class SpectrumVisualizer : MonoBehaviour
             SoftJointLimit sjl = new SoftJointLimit();
             sjl.limit = sliderHeightLimit;
             currBarRb.GetComponent<ConfigurableJoint>().linearLimit = sjl;
-
+            if(b == 16)
+            {
+                Debug.Log("currIndex: " + b + " axis: " + currBarRb.GetComponent<ConfigurableJoint>().axis);
+                Debug.Log("(currBarOrigin.position - currBarTarget.position)" + (currBarOrigin.position - currBarTarget.position) + " currBarOrigin.Pos: " + currBarOrigin.position + " currBarTarget.pos: " + currBarTarget.position);
+            }
             currBarRigidbody.GetComponent<PID_Controller>().SetGains(PID_Pgain, PID_Dgain);
 
         }
