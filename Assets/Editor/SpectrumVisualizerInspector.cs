@@ -45,6 +45,5 @@ public class SpectrumVisualizerInspector : Editor
 
         serializedObject.ApplyModifiedProperties();
 
-        //base.OnInspectorGUI();
     }
 }

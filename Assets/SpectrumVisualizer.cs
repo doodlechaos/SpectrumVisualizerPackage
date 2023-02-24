@@ -27,6 +27,14 @@ public class SpectrumVisualizer : MonoBehaviour
 
     [SerializeField] private int totalBars;
     [SerializeField] private float barWidth;
+    [SerializeField] private float barMaxHeight;
+    [SerializeField] private float PID_Pgain;
+    [SerializeField] private float PID_Dgain;
+
+    [SerializeField] private float sliderHeightLimit;
+    [SerializeField] private float spectrumSampleMaxValue;
+    [SerializeField] private float spectrumSampleMinValue;
+
     private float prevBarWidth;
 
     [SerializeField] private float barHeightMultiplier;
@@ -125,19 +133,32 @@ public class SpectrumVisualizer : MonoBehaviour
 
         while (BarOriginsRoot.childCount < totalBars)
         {
-            GameObject barOrigin = new GameObject("barOrigin" + BarOriginsRoot.childCount);
+            int currIndex = BarOriginsRoot.childCount; 
+            GameObject barOrigin = new GameObject("barOrigin" + currIndex);
             barOrigin.transform.localScale = Vector3.one;
             barOrigin.transform.position = Vector3.zero;
             barOrigin.transform.SetParent(BarOriginsRoot);
 
+            GameObject barTarget = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            barTarget.name = ("barTarget" + currIndex); 
+            barTarget.transform.localScale = Vector3.one;
+            barTarget.transform.position = Vector3.zero;
+            barTarget.GetComponent<SphereCollider>();
+            barTarget.transform.SetParent(barOrigin.transform);
+            DestroyImmediate(barTarget.GetComponent<SphereCollider>()); 
 
             GameObject newBar = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            newBar.name = "bar" + BarOriginsRoot.childCount;
+            newBar.name = "bar" + currIndex;
             newBar.transform.position = new Vector3(0, 0.5f, 0); // move block so that the edge lines up with the bar origin. 
             newBar.transform.SetParent(BarRigidbodiesRoot);
 
-            newBar.AddComponent<Rigidbody>();
+            newBar.AddComponent<PID_Controller>(); //Automatically adds rigidbody as well
+
+            newBar.GetComponent<PID_Controller>().SetTarget(barTarget.transform);
+
             newBar.GetComponent<Rigidbody>().useGravity = true;
+            newBar.GetComponent<Rigidbody>().drag = 20;
+
 
             newBar.AddComponent<ConfigurableJoint>();
             newBar.GetComponent<ConfigurableJoint>().anchor = Vector3.zero;
@@ -151,7 +172,6 @@ public class SpectrumVisualizer : MonoBehaviour
             SoftJointLimit sjl = new SoftJointLimit();
             sjl.limit = 3;
             newBar.GetComponent<ConfigurableJoint>().linearLimit = sjl; 
-
 
         }
         while (BarOriginsRoot.childCount > totalBars)
@@ -185,34 +205,31 @@ public class SpectrumVisualizer : MonoBehaviour
 
         for(int b = 0; b < BarOriginsRoot.childCount; b++)
         {
-            var currBar = BarOriginsRoot.GetChild(b);
+            var currBarOrigin = BarOriginsRoot.GetChild(b);
+            var currBarRigidbody = BarRigidbodiesRoot.GetChild(b);
+            var currBarTarget = currBarOrigin.GetChild(0); 
             float t = b / (float)BarOriginsRoot.childCount;
 
             //Set the bar origin to the correct position
-            currBar.transform.position = GetPointOnLineRenderer(lr, totalLineLength, t);
+            currBarOrigin.transform.position = GetPointOnLineRenderer(lr, totalLineLength, t);
             Transform currBarRb = BarRigidbodiesRoot.GetChild(b);
-            currBarRb.GetComponent<ConfigurableJoint>().connectedAnchor = currBar.transform.position;
+            currBarRb.GetComponent<ConfigurableJoint>().connectedAnchor = currBarOrigin.transform.position;
 
             //and rotate it based on the normal to the line at that point
             Vector3 normal = GetNormalOnLineRenderer(lr, totalLineLength, t);
-            Debug.DrawRay(currBar.transform.position, normal, Color.green, 15);
+            Debug.DrawRay(currBarOrigin.transform.position, -normal, Color.green, 1);
 
-            currBarRb.GetComponent<ConfigurableJoint>().axis = Vector3.up; //normal;
-            currBar.transform.LookAt(currBar.transform.position - normal, Vector3.up);
-            currBar.transform.Rotate(Vector3.right, 90, Space.Self);
+            currBarOrigin.transform.LookAt(currBarOrigin.transform.position - normal, currBarOrigin.transform.up);
+            currBarOrigin.transform.Rotate(Vector3.right, 90, Space.Self);
 
-            currBarRb.GetComponent<ConfigurableJoint>().angularXMotion = ConfigurableJointMotion.Free;
-            currBarRb.GetComponent<ConfigurableJoint>().angularYMotion = ConfigurableJointMotion.Free;
-            currBarRb.GetComponent<ConfigurableJoint>().angularZMotion = ConfigurableJointMotion.Free;
-            currBarRb.transform.rotation = currBar.transform.rotation;
-            currBarRb.GetComponent<ConfigurableJoint>().angularXMotion = ConfigurableJointMotion.Locked;
-            currBarRb.GetComponent<ConfigurableJoint>().angularYMotion = ConfigurableJointMotion.Locked;
-            currBarRb.GetComponent<ConfigurableJoint>().angularZMotion = ConfigurableJointMotion.Locked;
+            currBarRb.GetComponent<ConfigurableJoint>().axis = (currBarOrigin.position - currBarTarget.position); //normal;
+            SoftJointLimit sjl = new SoftJointLimit();
+            sjl.limit = sliderHeightLimit;
+            currBarRb.GetComponent<ConfigurableJoint>().linearLimit = sjl;
+
+            currBarRigidbody.GetComponent<PID_Controller>().SetGains(PID_Pgain, PID_Dgain);
+
         }
-    }
-    private void InitializeBarRigidbody()
-    {
-
     }
 
 
@@ -297,13 +314,27 @@ public class SpectrumVisualizer : MonoBehaviour
             //Move the bars based on the spectrum data
             for (int i = 0; i < BarOriginsRoot.childCount; i++)
             {
-                var currBar = BarOriginsRoot.GetChild(i);
+                var currOrigin = BarOriginsRoot.GetChild(i);
                 // t is the percent index of the spectrum data we are sampling. 
-                float t = i /(float) BarOriginsRoot.childCount;
+                float t = i /(float)BarRigidbodiesRoot.childCount;
                 int spectrumIndex = Mathf.FloorToInt(visualizerSamples * t);
                 //Debug.Log("spectrumData.length: " + spectrumData.Length + " SpectrumIndex: " + spectrumIndex);
-                float newYScale = spectrumData[spectrumIndex];
-                currBar.localScale = new Vector3(currBar.localScale.x, 1 + (newYScale * barHeightMultiplier), currBar.localScale.z);
+                float spectrumSample = spectrumData[spectrumIndex];
+
+                //Clamp the sample value between the min and max we specify
+                spectrumSample = (spectrumSample < spectrumSampleMinValue) ? spectrumSampleMinValue : spectrumSample;
+                spectrumSample = (spectrumSample > spectrumSampleMaxValue) ? spectrumSampleMaxValue : spectrumSample;
+
+                float currSampleHeightPercent = (spectrumSample - spectrumSampleMinValue) / (spectrumSampleMaxValue - spectrumSampleMinValue);
+
+                //Debug.DrawRay(currOrigin.position + new Vector3(0, 10, 0), currOrigin.up * spectrumSample * barHeightMultiplier, Color.cyan, 1);
+
+                //Debug.Log("currOrigin.up: " + currOrigin.up + " sampleRelativeMagnitude: " + sampleRelativeMagnitude + " total: " + currOrigin.up * spectrumSample * barHeightMultiplier);
+                Debug.DrawRay(currOrigin.position, currOrigin.up * barMaxHeight, Color.white, 1);
+                currOrigin.GetChild(0).transform.position = currOrigin.position + (currOrigin.up * barMaxHeight);
+
+                //BarRigidbodiesRoot.GetChild(i).transform.rotation = currOrigin.transform.rotation; //TODO: This might mess up the velocity
+
             }
         }
 
