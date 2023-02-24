@@ -16,6 +16,9 @@ public class SpectrumVisualizer : MonoBehaviour
     [SerializeField] public int visualizerSamples = 64;
     [SerializeField] public FFTWindow fttwindow;
 
+    [SerializeField][Range(0.0f, 1.0f)] private float spectrumStartFraction;
+    [SerializeField] [Range(0.0f, 1.0f)] private float spectrumEndFraction;
+
     public enum AudioInputMode { AudioFile, LiveListen, Microphone } 
     [HideInInspector] public AudioInputMode audioInputMode;
     private AudioInputMode previousAudioInputMode;
@@ -156,6 +159,7 @@ public class SpectrumVisualizer : MonoBehaviour
             newBar.name = "bar" + currIndex;
             newBar.transform.position = new Vector3(0, 0.5f, 0); // move block so that the edge lines up with the bar origin. 
             newBar.transform.SetParent(BarRigidbodiesRoot);
+            newBar.transform.rotation = Quaternion.Euler(0, 0, 0);
 
             newBar.AddComponent<PID_Controller>(); //Automatically adds rigidbody as well
 
@@ -163,7 +167,6 @@ public class SpectrumVisualizer : MonoBehaviour
 
             newBar.GetComponent<Rigidbody>().useGravity = true;
             newBar.GetComponent<Rigidbody>().drag = 20;
-
 
             newBar.AddComponent<ConfigurableJoint>();
             newBar.GetComponent<ConfigurableJoint>().anchor = Vector3.zero;
@@ -227,16 +230,21 @@ public class SpectrumVisualizer : MonoBehaviour
             currBarOrigin.transform.LookAt(currBarOrigin.transform.position - normal, currBarOrigin.transform.up);
             currBarOrigin.transform.Rotate(Vector3.right, 90, Space.Self);
 
-            currBarRb.GetComponent<ConfigurableJoint>().axis = (currBarOrigin.position - currBarTarget.position); //normal;
+            currBarRb.GetComponent<ConfigurableJoint>().axis = Vector3.up; // (currBarOrigin.position - currBarTarget.position); //normal;
             SoftJointLimit sjl = new SoftJointLimit();
             sjl.limit = sliderHeightLimit;
             currBarRb.GetComponent<ConfigurableJoint>().linearLimit = sjl;
-            //if(b == 16)
-            //{
-                //Debug.Log("currIndex: " + b + " axis: " + currBarRb.GetComponent<ConfigurableJoint>().axis);
-                //Debug.Log("(currBarOrigin.position - currBarTarget.position)" + (currBarOrigin.position - currBarTarget.position) + " currBarOrigin.Pos: " + currBarOrigin.position + " currBarTarget.pos: " + currBarTarget.position);
-            //}
+
             currBarRigidbody.GetComponent<PID_Controller>().SetGains(PID_Pgain, PID_Dgain);
+
+            currBarRb.GetComponent<ConfigurableJoint>().angularXMotion = ConfigurableJointMotion.Free;
+            currBarRb.GetComponent<ConfigurableJoint>().angularYMotion = ConfigurableJointMotion.Free;
+            currBarRb.GetComponent<ConfigurableJoint>().angularZMotion = ConfigurableJointMotion.Free;
+            currBarRb.rotation = Quaternion.Euler(0, 0, currBarOrigin.eulerAngles.z);
+            Debug.Log("setting rotation to: " + Quaternion.Euler(0, 0, currBarOrigin.eulerAngles.z).eulerAngles.ToString());
+            currBarRb.GetComponent<ConfigurableJoint>().angularXMotion = ConfigurableJointMotion.Locked;
+            currBarRb.GetComponent<ConfigurableJoint>().angularYMotion = ConfigurableJointMotion.Locked;
+            currBarRb.GetComponent<ConfigurableJoint>().angularZMotion = ConfigurableJointMotion.Locked;
 
         }
     }
@@ -320,32 +328,28 @@ public class SpectrumVisualizer : MonoBehaviour
         if (audioInputMode == AudioInputMode.LiveListen || audioInputMode == AudioInputMode.Microphone)
         {
             GetComponent<AudioSource>().GetSpectrumData(spectrumData, 0, fttwindow);
+
+            //Trim the edges of the spectrum data as desired
+            int startIndex = (int)(spectrumStartFraction * spectrumData.Length);
+            int stopIndex = (int)(spectrumEndFraction * spectrumData.Length);
+
+            float[] spectrumSubset = new float[stopIndex - startIndex];
+            System.Array.Copy(spectrumData, startIndex, spectrumSubset, 0, spectrumSubset.Length);
+
             //Move the bars based on the spectrum data
             for (int i = 0; i < BarOriginsRoot.childCount; i++)
             {
                 var currOrigin = BarOriginsRoot.GetChild(i);
                 // t is the percent index of the spectrum data we are sampling. 
                 float t = i /(float)BarRigidbodiesRoot.childCount;
-                int spectrumIndex = Mathf.FloorToInt(visualizerSamples * t);
+                int spectrumIndex = Mathf.FloorToInt(spectrumSubset.Length * t);
                 //Debug.Log("spectrumData.length: " + spectrumData.Length + " SpectrumIndex: " + spectrumIndex);
                 float spectrumSample = spectrumData[spectrumIndex];
 
-                //Clamp the sample value between the min and max we specify
-                //spectrumSample = (spectrumSample < spectrumSampleMinValue) ? spectrumSampleMinValue : spectrumSample;
-                //spectrumSample = (spectrumSample > spectrumSampleMaxValue) ? spectrumSampleMaxValue : spectrumSample;
-
-                //Debug.Log("Spectrum Sample: " + spectrumSample);
-                //float currSampleHeightPercent = //(spectrumSample - spectrumSampleMinValue) / (spectrumSampleMaxValue - spectrumSampleMinValue);
-
-                //Debug.Log("currSampleHeightPercent: " + currSampleHeightPercent);
-                //Debug.DrawRay(currOrigin.position + new Vector3(0, 10, 0), currOrigin.up * spectrumSample * barHeightMultiplier, Color.cyan, 1);
-
-                //Debug.Log("currOrigin.up: " + currOrigin.up + " sampleRelativeMagnitude: " + sampleRelativeMagnitude + " total: " + currOrigin.up * spectrumSample * barHeightMultiplier);
                 Debug.DrawRay(currOrigin.position, currOrigin.up * barMaxHeight, Color.white, 1);
                 currOrigin.GetChild(0).transform.position = currOrigin.position + (currOrigin.up * barMaxHeight * Mathf.Clamp01(spectrumSample * barHeightMultiplier));
 
-                
-                //BarRigidbodiesRoot.GetChild(i).transform.rotation = currOrigin.transform.rotation; //TODO: This might mess up the velocity
+                //BarRigidbodiesRoot.GetChild(i).transform.rotation = currOrigin.transform.rotation; //TODO: This messes up the rotation
 
             }
         }
