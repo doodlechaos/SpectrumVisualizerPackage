@@ -32,8 +32,8 @@ public class SpectrumVisualizer : MonoBehaviour
     [SerializeField] private float PID_Dgain;
 
     [SerializeField] private float sliderHeightLimit;
-    [SerializeField] private float spectrumSampleMaxValue;
-    [SerializeField] private float spectrumSampleMinValue;
+    private float spectrumSampleMaxValue;
+    private float spectrumSampleMinValue;
 
     private float prevBarWidth;
 
@@ -46,6 +46,11 @@ public class SpectrumVisualizer : MonoBehaviour
     private Transform PurgatoryRoot;
 
     [SerializeField] private bool testButton;
+
+    public void Start()
+    {
+        GetMinMaxSampleValue(inputAudio, out spectrumSampleMinValue, out spectrumSampleMaxValue); 
+    }
 
     public void CustomOnValidate()
     {
@@ -61,7 +66,6 @@ public class SpectrumVisualizer : MonoBehaviour
             BarOriginsRoot.position = Vector3.zero;
             BarOriginsRoot.localScale = Vector3.one;
             BarOriginsRoot.SetParent(transform);
-
         }
         else
         {
@@ -144,6 +148,7 @@ public class SpectrumVisualizer : MonoBehaviour
             barTarget.transform.localScale = Vector3.one;
             barTarget.transform.position = Vector3.zero;
             barTarget.GetComponent<SphereCollider>();
+            barTarget.GetComponent<MeshRenderer>().enabled = false; //TODO add inspector toggle for this
             barTarget.transform.SetParent(barOrigin.transform);
             DestroyImmediate(barTarget.GetComponent<SphereCollider>()); 
 
@@ -226,11 +231,11 @@ public class SpectrumVisualizer : MonoBehaviour
             SoftJointLimit sjl = new SoftJointLimit();
             sjl.limit = sliderHeightLimit;
             currBarRb.GetComponent<ConfigurableJoint>().linearLimit = sjl;
-            if(b == 16)
-            {
-                Debug.Log("currIndex: " + b + " axis: " + currBarRb.GetComponent<ConfigurableJoint>().axis);
-                Debug.Log("(currBarOrigin.position - currBarTarget.position)" + (currBarOrigin.position - currBarTarget.position) + " currBarOrigin.Pos: " + currBarOrigin.position + " currBarTarget.pos: " + currBarTarget.position);
-            }
+            //if(b == 16)
+            //{
+                //Debug.Log("currIndex: " + b + " axis: " + currBarRb.GetComponent<ConfigurableJoint>().axis);
+                //Debug.Log("(currBarOrigin.position - currBarTarget.position)" + (currBarOrigin.position - currBarTarget.position) + " currBarOrigin.Pos: " + currBarOrigin.position + " currBarTarget.pos: " + currBarTarget.position);
+            //}
             currBarRigidbody.GetComponent<PID_Controller>().SetGains(PID_Pgain, PID_Dgain);
 
         }
@@ -326,22 +331,47 @@ public class SpectrumVisualizer : MonoBehaviour
                 float spectrumSample = spectrumData[spectrumIndex];
 
                 //Clamp the sample value between the min and max we specify
-                spectrumSample = (spectrumSample < spectrumSampleMinValue) ? spectrumSampleMinValue : spectrumSample;
-                spectrumSample = (spectrumSample > spectrumSampleMaxValue) ? spectrumSampleMaxValue : spectrumSample;
+                //spectrumSample = (spectrumSample < spectrumSampleMinValue) ? spectrumSampleMinValue : spectrumSample;
+                //spectrumSample = (spectrumSample > spectrumSampleMaxValue) ? spectrumSampleMaxValue : spectrumSample;
 
-                float currSampleHeightPercent = (spectrumSample - spectrumSampleMinValue) / (spectrumSampleMaxValue - spectrumSampleMinValue);
+                //Debug.Log("Spectrum Sample: " + spectrumSample);
+                //float currSampleHeightPercent = //(spectrumSample - spectrumSampleMinValue) / (spectrumSampleMaxValue - spectrumSampleMinValue);
 
+                //Debug.Log("currSampleHeightPercent: " + currSampleHeightPercent);
                 //Debug.DrawRay(currOrigin.position + new Vector3(0, 10, 0), currOrigin.up * spectrumSample * barHeightMultiplier, Color.cyan, 1);
 
                 //Debug.Log("currOrigin.up: " + currOrigin.up + " sampleRelativeMagnitude: " + sampleRelativeMagnitude + " total: " + currOrigin.up * spectrumSample * barHeightMultiplier);
                 Debug.DrawRay(currOrigin.position, currOrigin.up * barMaxHeight, Color.white, 1);
-                currOrigin.GetChild(0).transform.position = currOrigin.position + (currOrigin.up * barMaxHeight);
+                currOrigin.GetChild(0).transform.position = currOrigin.position + (currOrigin.up * barMaxHeight * Mathf.Clamp01(spectrumSample * barHeightMultiplier));
 
+                
                 //BarRigidbodiesRoot.GetChild(i).transform.rotation = currOrigin.transform.rotation; //TODO: This might mess up the velocity
 
             }
         }
 
+    }
+    public static void GetMinMaxSampleValue(AudioClip clip, out float min, out float max)
+    {
+        float[] samples = new float[clip.samples * clip.channels];
+        clip.GetData(samples, 0);
+        min = float.MaxValue;
+        max = float.MinValue;
 
+        for (int i = 0; i < samples.Length; i++)
+        {
+            float sampleValue = Mathf.Abs(samples[i]);
+
+            if (sampleValue < min)
+            {
+                min = sampleValue;
+            }
+
+            if (sampleValue > max)
+            {
+                max = sampleValue;
+            }
+        }
+        Debug.LogError("min: " + min + " max: " + max); 
     }
 }
