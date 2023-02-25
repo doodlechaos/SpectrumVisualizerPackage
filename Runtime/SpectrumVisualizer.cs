@@ -43,6 +43,7 @@ public class SpectrumVisualizer : MonoBehaviour
     [SerializeField] private float PID_Dgain;
     [SerializeField] private float BarRigidbodyDrag;
     [SerializeField] private float BarRigidbodyMass;
+    [SerializeField] private float overallForceScaler;
 
     [SerializeField] private float sliderHeightLimit;
     private float spectrumSampleMaxValue;
@@ -160,7 +161,7 @@ public class SpectrumVisualizer : MonoBehaviour
             barRb.UpdateBarStalk();
             if (!Application.isPlaying)
                 continue; 
-            barRb.UpdatePIDForce(secondsPerFixedUpdate);
+            barRb.UpdatePIDForce(secondsPerFixedUpdate, overallForceScaler);
         }
 
     }

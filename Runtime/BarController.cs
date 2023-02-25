@@ -45,7 +45,7 @@ public class BarController : MonoBehaviour //proportional–integral–derivative co
         GetComponent<Rigidbody>().MoveRotation(origin.rotation);
     }
 
-    public void UpdatePIDForce(float secondsPerUpdate)
+    public void UpdatePIDForce(float secondsPerUpdate, float overallForceScaler)
     {
         if (target == null)
             return;
@@ -57,10 +57,10 @@ public class BarController : MonoBehaviour //proportional–integral–derivative co
         float errorDerivative = (error - lastError) / secondsPerUpdate;
 
         // Calculate the force needed to move towards the target position
-        float force = error * pGain + errorDerivative * dGain;
+        float force = error * pGain + errorDerivative * dGain * overallForceScaler;
 
         // Apply the force to the Rigidbody
-        GetComponent<Rigidbody>().AddForce(force * (target.position - transform.position).normalized, ForceMode.Force); //PID Controller
+        GetComponent<Rigidbody>().AddForce(force * (target.position - transform.position).normalized , ForceMode.Force); //PID Controller
 
         // Remember the last error for the next FixedUpdate
         lastError = error;
