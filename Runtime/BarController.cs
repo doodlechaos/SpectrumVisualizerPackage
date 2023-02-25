@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody), typeof(ConfigurableJoint))]
@@ -63,11 +64,10 @@ public class BarController : MonoBehaviour //proportional–integral–derivative co
 
 
         // If the distance between the origin and the transform went negative, move it
-        float distFromOrigin = Vector3.Dot((transform.position - origin.position), origin.position);
+        float distFromOrigin = Vector3.Dot((GetComponent<Rigidbody>().position - origin.position), origin.position);
         if(distFromOrigin < 0)
         {
-            //Debug.LogError("detected below line: " + distFromOrigin);
-            //GetComponent<Rigidbody>().MovePosition(origin.position);
+            GetComponent<Rigidbody>().MovePosition(origin.position);
         }
     }
 
@@ -92,10 +92,28 @@ public class BarController : MonoBehaviour //proportional–integral–derivative co
     public void UpdateBarStalk()
     {
         Debug.Log("updating bar stalk: " + transform.name + ": " + transform.position + " rbPos: " + GetComponent<Rigidbody>().position);
+        var dropDown = (origin.up * transform.localScale.y / 2);
+        stalk.transform.rotation = origin.rotation;
+
+        //if moving below origin, prevent it
+        if (Vector3.Dot((origin.position - transform.position), origin.up) > 0)
+        {
+            Debug.LogError(transform.name + " detected below line: " + (origin.position - transform.position));
+            stalk.transform.position = origin.position - dropDown;
+            stalk.localScale = new Vector3(stalk.localScale.x, transform.localScale.y, stalk.localScale.z);
+
+            if ((origin.position - transform.position).y > 0.02f)
+            {
+                //EditorApplication.isPaused = true;
+            }
+            return; 
+        }
+
+        //Else if above, change scale and position accordingly
         float length = Vector3.Distance(origin.position, transform.position);
         stalk.localScale = new Vector3(stalk.localScale.x, length + transform.localScale.y, stalk.localScale.z);
-        stalk.transform.position = Vector3.Lerp(origin.position, transform.position, 0.5f) - (origin.up * transform.localScale.y / 2 ); //Should be half way between the origin and cap
-        stalk.transform.rotation = origin.rotation;
+        stalk.transform.position = Vector3.Lerp(origin.position, transform.position, 0.5f) - dropDown; //Should be half way between the origin and cap
+       
     }
 
 }
