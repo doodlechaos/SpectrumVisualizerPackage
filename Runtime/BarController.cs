@@ -91,14 +91,14 @@ public class BarController : MonoBehaviour //proportional–integral–derivative co
 
     public void UpdateBarStalk()
     {
-        Debug.Log("updating bar stalk: " + transform.name + ": " + transform.position + " rbPos: " + GetComponent<Rigidbody>().position);
+        //Debug.Log("updating bar stalk: " + transform.name + ": " + transform.position + " rbPos: " + GetComponent<Rigidbody>().position);
         var dropDown = (origin.up * transform.localScale.y / 2);
         stalk.transform.rotation = origin.rotation;
 
         //if moving below origin, prevent it
         if (Vector3.Dot((origin.position - transform.position), origin.up) > 0)
         {
-            Debug.LogError(transform.name + " detected below line: " + (origin.position - transform.position));
+            //Debug.LogError(transform.name + " detected below line: " + (origin.position - transform.position));
             stalk.transform.position = origin.position - dropDown;
             stalk.localScale = new Vector3(stalk.localScale.x, transform.localScale.y, stalk.localScale.z);
 

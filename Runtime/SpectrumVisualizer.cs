@@ -146,7 +146,7 @@ public class SpectrumVisualizer : MonoBehaviour
         foreach(var barRb in BarRigidbodiesRoot.GetComponentsInChildren<BarController>())
         {
             barRb.transform.GetComponent<Rigidbody>().drag = BarRigidbodyDrag;
-
+            
             barRb.UpdateConfigJoint(sliderHeightLimit);
             barRb.UpdateBarStalk();
             if (!Application.isPlaying)
