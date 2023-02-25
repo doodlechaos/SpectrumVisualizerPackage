@@ -261,8 +261,7 @@ public class SpectrumVisualizer : MonoBehaviour
             //Make the stalk and the cap not collide with one another
             Physics.IgnoreCollision(barStalk.GetComponent<Collider>(), newBarRB.GetComponent<Collider>());
 
-            newBarRB.GetComponent<Rigidbody>().useGravity = true;
-            newBarRB.GetComponent<Rigidbody>().drag = 20; //Todo set slider for this
+            newBarRB.GetComponent<Rigidbody>().useGravity = false;
             newBarRB.GetComponent<BoxCollider>().sharedMaterial = barPhysicsMat;
 
 
