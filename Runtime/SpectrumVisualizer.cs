@@ -67,6 +67,9 @@ public class SpectrumVisualizer : MonoBehaviour
     public Material stalkMaterial;
     public Material capMaterial;
 
+    [SerializeField] private float audioFileTime;
+
+
     public void Start()
     {
         Physics.IgnoreLayerCollision(VisualizerLayer, VisualizerLayer); //Necessary to prevent self collision with config joint 
@@ -91,6 +94,7 @@ public class SpectrumVisualizer : MonoBehaviour
                 GetComponent<AudioSource>().clip = Microphone.Start(microphoneName, true, 20, AudioSettings.outputSampleRate);
                 GetComponent<AudioSource>().Play();
             }
+
             previousAudioInputMode = audioInputMode; 
         }
 
@@ -111,6 +115,7 @@ public class SpectrumVisualizer : MonoBehaviour
         foreach(var barStalk in BarStalksRoot.GetComponentsInChildren<BarController>())
         {
             barStalk.SetInitialPosition();
+
         }
 
         // 7. If the bar width was changed, update it
@@ -394,20 +399,20 @@ public class SpectrumVisualizer : MonoBehaviour
 
     public void StepUpdate()
     {
-        float[] spectrumData = new float[visualizerSamples];
 
         if (BarOriginsRoot == null)
             return;
 
-        UpdateBars(); //TODO seems like a waste to do this every time, but may be necessary to prevent axis from not correctly being set.
+        UpdateBars();
+
+        float[] spectrumData = new float[visualizerSamples];
+        //Trim the edges of the spectrum data as desired
+        int startIndex = (int)(spectrumStartFraction * spectrumData.Length);
+        int stopIndex = (int)(spectrumEndFraction * spectrumData.Length);
 
         if (audioInputMode == AudioInputMode.LiveListen || audioInputMode == AudioInputMode.Microphone)
         {
             GetComponent<AudioSource>().GetSpectrumData(spectrumData, 0, fttwindow);
-
-            //Trim the edges of the spectrum data as desired
-            int startIndex = (int)(spectrumStartFraction * spectrumData.Length);
-            int stopIndex = (int)(spectrumEndFraction * spectrumData.Length);
 
             float[] spectrumSubset = new float[stopIndex - startIndex];
             System.Array.Copy(spectrumData, startIndex, spectrumSubset, 0, spectrumSubset.Length);
@@ -427,8 +432,14 @@ public class SpectrumVisualizer : MonoBehaviour
 
             }
         }
+        if (audioInputMode == AudioInputMode.AudioFile)
+        {
+            inputAudio.GetData(spectrumData, Mathf.RoundToInt(inputAudio.frequency * audioFileTime));
+            
+        }
 
     }
+
     public static void GetMinMaxSampleValue(AudioClip clip, out float min, out float max)
     {
         float[] samples = new float[clip.samples * clip.channels];
