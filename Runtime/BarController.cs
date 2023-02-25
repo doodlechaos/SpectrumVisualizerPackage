@@ -31,7 +31,7 @@ public class BarController : MonoBehaviour //proportional–integral–derivative co
         GetComponent<ConfigurableJoint>().angularZMotion = ConfigurableJointMotion.Locked;
     }
 
-    public void UpdatePIDForce()
+    public void UpdatePIDForce(float secondsPerUpdate)
     {
         if (target == null)
             return;
@@ -40,7 +40,7 @@ public class BarController : MonoBehaviour //proportional–integral–derivative co
         float error = Vector3.Distance(target.position, transform.position);
 
         // Calculate the derivative of the error
-        float errorDerivative = (error - lastError) / Time.fixedDeltaTime;
+        float errorDerivative = (error - lastError) / secondsPerUpdate;
 
         // Calculate the force needed to move towards the target position
         float force = error * pGain + errorDerivative * dGain;
@@ -73,7 +73,9 @@ public class BarController : MonoBehaviour //proportional–integral–derivative co
     public void UpdateBarScale()
     {
         float length = Vector3.Distance(origin.position, transform.position);
-        transform.localScale = new Vector3(transform.localScale.x, length * 2, transform.localScale.z);
+        //transform.localScale = new Vector3(transform.localScale.x, length * 2, transform.localScale.z);
+        transform.localScale = new Vector3(transform.localScale.x, 1, transform.localScale.z);
+
     }
 
 }

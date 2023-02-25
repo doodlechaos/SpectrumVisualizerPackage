@@ -23,7 +23,7 @@ public class SpectrumVisualizer : MonoBehaviour
     [HideInInspector] public AudioInputMode audioInputMode;
     private AudioInputMode previousAudioInputMode;
 
-    public enum UpdateMode { ManualUpdate, UpdateEachFrame }
+    public enum UpdateMode { ManualUpdate, FixedUpdateRate }
     [SerializeField] public UpdateMode updateMode;
 
     private List<GameObject> deathRow = new List<GameObject>();
@@ -54,6 +54,9 @@ public class SpectrumVisualizer : MonoBehaviour
     private Transform PurgatoryRoot;
 
     [SerializeField] private bool testButton;
+
+    [SerializeField] private float secondsPerFixedUpdate;
+    private float fixedUpdateTimer = 0; 
 
     public void Start()
     {
@@ -110,7 +113,9 @@ public class SpectrumVisualizer : MonoBehaviour
         {
             barRb.UpdateConfigJoint(sliderHeightLimit);
             barRb.UpdateBarScale();
-            barRb.UpdatePIDForce(); 
+            if (!Application.isPlaying)
+                continue; 
+            barRb.UpdatePIDForce(secondsPerFixedUpdate); 
         }
     }
 
@@ -294,16 +299,24 @@ public class SpectrumVisualizer : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if(updateMode == UpdateMode.UpdateEachFrame)
-        {
-            StepUpdate();
-        }
-
         while(deathRow.Count > 0)
         {
             DestroyImmediate(deathRow[deathRow.Count - 1]);
             deathRow.RemoveAt(deathRow.Count - 1); 
         }
+    }
+
+    private void FixedUpdate()
+    {
+        if (!Application.isPlaying)
+            return;
+        
+        if (updateMode == UpdateMode.FixedUpdateRate && fixedUpdateTimer >= secondsPerFixedUpdate)
+        {
+            StepUpdate();
+            fixedUpdateTimer = 0; 
+        }
+        fixedUpdateTimer += Time.fixedDeltaTime; 
     }
 
     public void StepUpdate()
