@@ -42,6 +42,7 @@ public class SpectrumVisualizer : MonoBehaviour
     [SerializeField] private float PID_Pgain;
     [SerializeField] private float PID_Dgain;
     [SerializeField] private float BarRigidbodyDrag;
+    [SerializeField] private float BarRigidbodyMass;
 
     [SerializeField] private float sliderHeightLimit;
     private float spectrumSampleMaxValue;
@@ -146,7 +147,8 @@ public class SpectrumVisualizer : MonoBehaviour
         foreach(var barRb in BarRigidbodiesRoot.GetComponentsInChildren<BarController>())
         {
             barRb.transform.GetComponent<Rigidbody>().drag = BarRigidbodyDrag;
-            
+            barRb.transform.GetComponent<Rigidbody>().mass = BarRigidbodyMass;
+
             barRb.UpdateConfigJoint(sliderHeightLimit);
             barRb.UpdateBarStalk();
             if (!Application.isPlaying)
