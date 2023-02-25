@@ -30,7 +30,7 @@ public class SpectrumVisualizerInspector : Editor
             script.CustomOnValidate();
         }
     
-        GUILayout.Label("This is a Label in a Custom Editor");
+        GUILayout.Label("Warning: Simulate Physics BEFORE stepping the visualizer in script to maintain lockstep with stalk and cap");
 
         var sv = (SpectrumVisualizer)target;
         EditorGUILayout.PropertyField(audioInputMode);
