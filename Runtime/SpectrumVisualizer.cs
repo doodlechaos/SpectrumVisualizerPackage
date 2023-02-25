@@ -61,13 +61,17 @@ public class SpectrumVisualizer : MonoBehaviour
     [SerializeField] private float secondsPerFixedUpdate;
     private float fixedUpdateTimer = 0;
 
+    public int VisualizerLayer;
     public Material stalkMaterial;
     public Material capMaterial;
 
     public void Start()
     {
+        Physics.IgnoreLayerCollision(VisualizerLayer, VisualizerLayer); //Necessary to prevent self collision with config joint 
         GetMinMaxSampleValue(inputAudio, out spectrumSampleMinValue, out spectrumSampleMaxValue);
-        CustomOnValidate(); 
+        CustomOnValidate();
+        BarRigidbodiesRoot.gameObject.SetActive(true);
+        BarStalksRoot.gameObject.SetActive(true);
     }
 
     public void CustomOnValidate()
@@ -117,7 +121,14 @@ public class SpectrumVisualizer : MonoBehaviour
                 bar.localScale = new Vector3(barDepth, bar.localScale.y, barWidth);
             }
         }
-    } 
+
+        // Make sure that all the gameobjects are set to the visualizer layer for no self collision:
+        SetLayerRecursively(gameObject, VisualizerLayer);
+        BarRigidbodiesRoot.gameObject.SetActive(false);
+        BarStalksRoot.gameObject.SetActive(false);
+    }
+
+
 
     private void UpdateBars()
     {
@@ -424,5 +435,15 @@ public class SpectrumVisualizer : MonoBehaviour
             }
         }
         Debug.LogError("min: " + min + " max: " + max); 
+    }
+
+    private void SetLayerRecursively(GameObject obj, int layer)
+    {
+        Debug.Log("setting: " + obj.name + " to layer: " + layer);
+        obj.layer = layer;
+        foreach (Transform child in obj.transform)
+        {
+            SetLayerRecursively(child.gameObject, layer);
+        }
     }
 }
