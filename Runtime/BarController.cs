@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
-[RequireComponent(typeof(Rigidbody), typeof(ConfigurableJoint))]
+//[RequireComponent(typeof(Rigidbody), typeof(ConfigurableJoint))]
+[RequireComponent(typeof(Rigidbody))]
 public class BarController : MonoBehaviour //proportional–integral–derivative controller
 {
     public Transform target;
@@ -23,7 +24,8 @@ public class BarController : MonoBehaviour //proportional–integral–derivative co
         stalk = _stalk; 
         pGain = _pGain;
         dGain = _dGain;
-
+        
+        /*
         GetComponent<ConfigurableJoint>().anchor = Vector3.zero;
         GetComponent<ConfigurableJoint>().autoConfigureConnectedAnchor = false;
         GetComponent<ConfigurableJoint>().xMotion = ConfigurableJointMotion.Limited;
@@ -32,6 +34,7 @@ public class BarController : MonoBehaviour //proportional–integral–derivative co
         GetComponent<ConfigurableJoint>().angularXMotion = ConfigurableJointMotion.Locked;
         GetComponent<ConfigurableJoint>().angularYMotion = ConfigurableJointMotion.Locked;
         GetComponent<ConfigurableJoint>().angularZMotion = ConfigurableJointMotion.Locked;
+        */
     }
 
     public void SetInitialPosition()

@@ -153,8 +153,10 @@ public class SpectrumVisualizer : MonoBehaviour
         {
             barRb.transform.GetComponent<Rigidbody>().drag = BarRigidbodyDrag;
             barRb.transform.GetComponent<Rigidbody>().mass = BarRigidbodyMass;
+            //barRb.transform.GetComponent<Rigidbody>().MoveRotation(barRb.origin.rotation);
+            barRb.transform.rotation = barRb.origin.rotation;
 
-            barRb.UpdateConfigJoint(sliderHeightLimit);
+            //barRb.UpdateConfigJoint(sliderHeightLimit);
             barRb.UpdateBarStalk();
             if (!Application.isPlaying)
                 continue; 
