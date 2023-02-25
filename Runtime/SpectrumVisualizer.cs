@@ -221,11 +221,13 @@ public class SpectrumVisualizer : MonoBehaviour
             newBarRB.transform.SetParent(BarRigidbodiesRoot);
             newBarRB.transform.rotation = Quaternion.Euler(0, 0, 0);
 
-            //Make the stalk and the cap not collide with one another
-            Physics.IgnoreCollision(barStalk.GetComponent<Collider>(), newBarRB.GetComponent<Collider>()); 
+
 
             newBarRB.AddComponent<BarController>(); //Automatically adds rigidbody and config joint as well, so must run this first
             newBarRB.GetComponent<BarController>().InitBar(barTarget.transform, barOrigin.transform, barStalk.transform, PID_Pgain, PID_Dgain);
+
+            //Make the stalk and the cap not collide with one another
+            Physics.IgnoreCollision(barStalk.GetComponent<Collider>(), newBarRB.GetComponent<Collider>());
 
             newBarRB.GetComponent<Rigidbody>().useGravity = true;
             newBarRB.GetComponent<Rigidbody>().drag = 20; //Todo set slider for this

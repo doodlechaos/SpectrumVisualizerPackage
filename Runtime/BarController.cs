@@ -83,7 +83,6 @@ public class BarController : MonoBehaviour //proportional–integral–derivative co
     public void UpdateBarStalk()
     {
         float length = Vector3.Distance(origin.position, transform.position);
-        //transform.localScale = new Vector3(transform.localScale.x, length * 2, transform.localScale.z);
         stalk.localScale = new Vector3(stalk.localScale.x, length, stalk.localScale.z);
         stalk.transform.position = Vector3.Lerp(origin.position, transform.position, 0.5f); //Should be half way between the origin and cap
         stalk.transform.rotation = origin.rotation;
