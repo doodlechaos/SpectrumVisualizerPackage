@@ -6,7 +6,8 @@ using UnityEngine;
 public class BarController : MonoBehaviour //proportional–integral–derivative controller
 {
     public Transform target;
-    public Transform origin; 
+    public Transform origin;
+    public Transform stalk; 
 
     public float pGain;
     public float dGain;
@@ -14,10 +15,11 @@ public class BarController : MonoBehaviour //proportional–integral–derivative co
     private float lastError = 0f;
 
 
-    public void InitBar(Transform _target, Transform _origin, float _pGain, float _dGain)
+    public void InitBar(Transform _target, Transform _origin, Transform _stalk, float _pGain, float _dGain)
     {
         target = _target;
         origin = _origin;
+        stalk = _stalk; 
         pGain = _pGain;
         dGain = _dGain;
 
@@ -29,6 +31,14 @@ public class BarController : MonoBehaviour //proportional–integral–derivative co
         GetComponent<ConfigurableJoint>().angularXMotion = ConfigurableJointMotion.Locked;
         GetComponent<ConfigurableJoint>().angularYMotion = ConfigurableJointMotion.Locked;
         GetComponent<ConfigurableJoint>().angularZMotion = ConfigurableJointMotion.Locked;
+    }
+
+    public void SetInitialPosition()
+    {
+        stalk.position = origin.position;
+        stalk.rotation = origin.rotation;
+        GetComponent<Rigidbody>().MovePosition(origin.position);
+        GetComponent<Rigidbody>().MoveRotation(origin.rotation);
     }
 
     public void UpdatePIDForce(float secondsPerUpdate)
@@ -70,12 +80,13 @@ public class BarController : MonoBehaviour //proportional–integral–derivative co
         GetComponent<ConfigurableJoint>().angularZMotion = ConfigurableJointMotion.Locked;
     }
 
-    public void UpdateBarScale()
+    public void UpdateBarStalk()
     {
         float length = Vector3.Distance(origin.position, transform.position);
         //transform.localScale = new Vector3(transform.localScale.x, length * 2, transform.localScale.z);
-        transform.localScale = new Vector3(transform.localScale.x, 1, transform.localScale.z);
-
+        stalk.localScale = new Vector3(stalk.localScale.x, length, stalk.localScale.z);
+        stalk.transform.position = Vector3.Lerp(origin.position, transform.position, 0.5f); //Should be half way between the origin and cap
+        stalk.transform.rotation = origin.rotation;
     }
 
 }

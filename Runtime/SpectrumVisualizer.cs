@@ -37,6 +37,8 @@ public class SpectrumVisualizer : MonoBehaviour
     private float prevBarWidth;
 
     [SerializeField] private float barMaxHeight;
+    [SerializeField] private float barCapYDepth;
+
     [SerializeField] private float PID_Pgain;
     [SerializeField] private float PID_Dgain;
 
@@ -50,13 +52,17 @@ public class SpectrumVisualizer : MonoBehaviour
 
     private LineRenderer lr;
     private Transform BarOriginsRoot;
+    private Transform BarStalksRoot;
     private Transform BarRigidbodiesRoot;
     private Transform PurgatoryRoot;
 
     [SerializeField] private bool testButton;
 
     [SerializeField] private float secondsPerFixedUpdate;
-    private float fixedUpdateTimer = 0; 
+    private float fixedUpdateTimer = 0;
+
+    public Material stalkMaterial;
+    public Material capMaterial;
 
     public void Start()
     {
@@ -95,6 +101,12 @@ public class SpectrumVisualizer : MonoBehaviour
         // 6. Update the config joints to match this new axis
         UpdateBars();
 
+        // 7. Set the initial bar positions
+        foreach(var barStalk in BarStalksRoot.GetComponentsInChildren<BarController>())
+        {
+            barStalk.SetInitialPosition();
+        }
+
         // 7. If the bar width was changed, update it
         if (barDepth != prevBarDepth || prevBarWidth != barWidth)
         {
@@ -109,20 +121,21 @@ public class SpectrumVisualizer : MonoBehaviour
 
     private void UpdateBars()
     {
+        //Update the rigidbodies
         foreach(var barRb in BarRigidbodiesRoot.GetComponentsInChildren<BarController>())
         {
             barRb.UpdateConfigJoint(sliderHeightLimit);
-            barRb.UpdateBarScale();
+            barRb.UpdateBarStalk();
             if (!Application.isPlaying)
                 continue; 
             barRb.UpdatePIDForce(secondsPerFixedUpdate); 
         }
+
     }
 
     private void ConstructRootsIfMissing()
     {
 
-        //Build the roots if they don't exist yet
         if (transform.childCount <= 0 || transform.GetChild(0).name != "BarOriginsRoot")
         {
             BarOriginsRoot = new GameObject("BarOriginsRoot").transform;
@@ -134,7 +147,6 @@ public class SpectrumVisualizer : MonoBehaviour
         {
             BarOriginsRoot = transform.GetChild(0);
         }
-        //Build the roots if they don't exist yet
         if (transform.childCount <= 1 || transform.GetChild(1).name != "BarRigidbodiesRoot")
         {
             BarRigidbodiesRoot = new GameObject("BarRigidbodiesRoot").transform;
@@ -146,7 +158,19 @@ public class SpectrumVisualizer : MonoBehaviour
         {
             BarRigidbodiesRoot = transform.GetChild(1);
         }
-        if (transform.childCount <= 2 || transform.GetChild(2).name != "PurgatoryRoot")
+        //Build the roots if they don't exist yet
+        if (transform.childCount <= 2 || transform.GetChild(2).name != "BarStalksRoot")
+        {
+            BarStalksRoot = new GameObject("BarStalksRoot").transform;
+            BarStalksRoot.position = Vector3.zero;
+            BarStalksRoot.localScale = Vector3.one;
+            BarStalksRoot.SetParent(transform);
+        }
+        else
+        {
+            BarStalksRoot = transform.GetChild(2);
+        }
+        if (transform.childCount <= 3 || transform.GetChild(3).name != "PurgatoryRoot")
         {
             PurgatoryRoot = new GameObject("PurgatoryRoot").transform;
             PurgatoryRoot.SetParent(transform);
@@ -155,7 +179,7 @@ public class SpectrumVisualizer : MonoBehaviour
         }
         else
         {
-            PurgatoryRoot = transform.GetChild(2);
+            PurgatoryRoot = transform.GetChild(3);
         }
     }
 
@@ -166,33 +190,48 @@ public class SpectrumVisualizer : MonoBehaviour
 
         while (BarOriginsRoot.childCount < totalBars)
         {
+            //Create the origin empty
             int currIndex = BarOriginsRoot.childCount; 
             GameObject barOrigin = new GameObject("barOrigin" + currIndex);
             barOrigin.transform.localScale = Vector3.one;
             barOrigin.transform.position = Vector3.zero;
             barOrigin.transform.SetParent(BarOriginsRoot);
 
+            //Create the target 
             GameObject barTarget = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             barTarget.name = ("barTarget" + currIndex); 
             barTarget.transform.localScale = Vector3.one;
             barTarget.transform.position = Vector3.zero;
-            barTarget.GetComponent<SphereCollider>();
             barTarget.GetComponent<MeshRenderer>().enabled = false; //TODO add inspector toggle for this
             barTarget.transform.SetParent(barOrigin.transform);
-            DestroyImmediate(barTarget.GetComponent<SphereCollider>()); 
+            DestroyImmediate(barTarget.GetComponent<SphereCollider>());
 
+            //Create the stalk of the bar
+            GameObject barStalk = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            barStalk.name = ("barStalk" + currIndex);
+            barStalk.GetComponent<Renderer>().material = stalkMaterial;
+            barStalk.transform.localScale = Vector3.one;
+            barStalk.transform.position = Vector3.zero;
+            barStalk.transform.SetParent(BarStalksRoot);
+
+            //Create the rigidbody cap of the bar
             GameObject newBarRB = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            newBarRB.name = "bar" + currIndex;
-            newBarRB.transform.position = new Vector3(0, 0.5f, 0); // move block so that the edge lines up with the bar origin. 
+            newBarRB.name = "barRB_" + currIndex;
+            newBarRB.GetComponent<Renderer>().material = capMaterial;
             newBarRB.transform.SetParent(BarRigidbodiesRoot);
             newBarRB.transform.rotation = Quaternion.Euler(0, 0, 0);
 
+            //Make the stalk and the cap not collide with one another
+            Physics.IgnoreCollision(barStalk.GetComponent<Collider>(), newBarRB.GetComponent<Collider>()); 
+
             newBarRB.AddComponent<BarController>(); //Automatically adds rigidbody and config joint as well, so must run this first
-            newBarRB.GetComponent<BarController>().InitBar(barTarget.transform, barOrigin.transform, PID_Pgain, PID_Dgain);
+            newBarRB.GetComponent<BarController>().InitBar(barTarget.transform, barOrigin.transform, barStalk.transform, PID_Pgain, PID_Dgain);
 
             newBarRB.GetComponent<Rigidbody>().useGravity = true;
-            newBarRB.GetComponent<Rigidbody>().drag = 20;
-            newBarRB.GetComponent<BoxCollider>().sharedMaterial = barPhysicsMat; 
+            newBarRB.GetComponent<Rigidbody>().drag = 20; //Todo set slider for this
+            newBarRB.GetComponent<BoxCollider>().sharedMaterial = barPhysicsMat;
+
+
         }
 
         while (BarOriginsRoot.childCount > totalBars)
@@ -206,6 +245,12 @@ public class SpectrumVisualizer : MonoBehaviour
             var currBarRb = BarRigidbodiesRoot.GetChild(BarRigidbodiesRoot.childCount - 1);
             deathRow.Add(currBarRb.gameObject);
             currBarRb.SetParent(PurgatoryRoot);
+        }
+        while (BarStalksRoot.childCount > totalBars)
+        {
+            var currBarStalk = BarStalksRoot.GetChild(BarStalksRoot.childCount - 1);
+            deathRow.Add(currBarStalk.gameObject);
+            currBarStalk.SetParent(PurgatoryRoot);
         }
     }
 
@@ -226,7 +271,6 @@ public class SpectrumVisualizer : MonoBehaviour
         for(int b = 0; b < BarOriginsRoot.childCount; b++)
         {
             var currBarOrigin = BarOriginsRoot.GetChild(b);
-            Transform currBarRb = BarRigidbodiesRoot.GetChild(b);
 
             float t = b / (float)BarOriginsRoot.childCount;
 
