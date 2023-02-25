@@ -51,7 +51,7 @@ public class SpectrumVisualizer : MonoBehaviour
 
 
     [SerializeField] private float barHeightMultiplier;
-
+    [SerializeField] private Gradient barColorGradient;
 
     private LineRenderer lr;
     private Transform BarOriginsRoot;
@@ -142,6 +142,20 @@ public class SpectrumVisualizer : MonoBehaviour
         {
             BarRigidbodiesRoot.gameObject.SetActive(false);
             BarStalksRoot.gameObject.SetActive(false);
+        }
+
+        if (!Application.isPlaying)
+            return; 
+        //Color all the bars in a spectrum, using temp materials because if not, it causes a memory leak when done in the editor
+        for(int i = 0; i < BarRigidbodiesRoot.childCount; i++)
+        {
+            var tempMaterial = new Material(BarRigidbodiesRoot.GetChild(i).GetComponent<Renderer>().sharedMaterial);
+            tempMaterial.color = barColorGradient.Evaluate(i / (float)BarRigidbodiesRoot.childCount);
+            BarRigidbodiesRoot.GetChild(i).GetComponent<Renderer>().sharedMaterial = tempMaterial;
+
+            var tempMaterial2 = new Material(BarStalksRoot.GetChild(i).GetComponent<Renderer>().sharedMaterial);
+            tempMaterial2.color = barColorGradient.Evaluate(i / (float)BarRigidbodiesRoot.childCount);
+            BarStalksRoot.GetChild(i).GetComponent<Renderer>().sharedMaterial = tempMaterial;
         }
     }
 
@@ -242,7 +256,6 @@ public class SpectrumVisualizer : MonoBehaviour
             //Create the stalk of the bar
             GameObject barStalk = GameObject.CreatePrimitive(PrimitiveType.Cube);
             barStalk.name = ("barStalk" + currIndex);
-            barStalk.GetComponent<Renderer>().material = stalkMaterial;
             barStalk.transform.localScale = Vector3.one;
             barStalk.transform.position = Vector3.zero;
             barStalk.transform.SetParent(BarStalksRoot);
@@ -250,7 +263,6 @@ public class SpectrumVisualizer : MonoBehaviour
             //Create the rigidbody cap of the bar
             GameObject newBarRB = GameObject.CreatePrimitive(PrimitiveType.Cube);
             newBarRB.name = "barRB_" + currIndex;
-            newBarRB.GetComponent<Renderer>().material = capMaterial;
             newBarRB.transform.SetParent(BarRigidbodiesRoot);
             newBarRB.transform.rotation = Quaternion.Euler(0, 0, 0);
 
@@ -383,21 +395,6 @@ public class SpectrumVisualizer : MonoBehaviour
             deathRow.RemoveAt(deathRow.Count - 1); 
         }
     }
-
-    /*
-    private void FixedUpdate()
-    {
-        if (!Application.isPlaying)
-            return;
-        
-        if (updateMode == UpdateMode.FixedUpdateRate && fixedUpdateTimer >= secondsPerFixedUpdate)
-        {
-            StepUpdate();
-            fixedUpdateTimer = 0; 
-        }
-        fixedUpdateTimer += Time.fixedDeltaTime; 
-    }
-    */
 
     public void StepUpdate()
     {
