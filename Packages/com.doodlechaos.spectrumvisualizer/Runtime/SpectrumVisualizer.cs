@@ -31,6 +31,7 @@ public class SpectrumVisualizer : MonoBehaviour
     [SerializeField] private int totalBars;
     [SerializeField] private float barDepth;
     private float prevBarDepth;
+    public PhysicMaterial barPhysicsMat;
 
     [SerializeField] private float barWidth;
     private float prevBarWidth;
@@ -172,17 +173,12 @@ public class SpectrumVisualizer : MonoBehaviour
             barTarget.GetComponent<SphereCollider>();
             barTarget.GetComponent<MeshRenderer>().enabled = false; //TODO add inspector toggle for this
             barTarget.transform.SetParent(barOrigin.transform);
-            DestroyImmediate(barTarget.GetComponent<SphereCollider>());
+            DestroyImmediate(barTarget.GetComponent<SphereCollider>()); 
 
-            //Need to set the origin of the rb on the side so that we can scale it up without changing the position and messing up the velocity
-            GameObject barRbRoot = new GameObject("barRbRoot" + currIndex);
-            barRbRoot.transform.localScale = Vector3.one;
-            barRbRoot.transform.position = Vector3.zero;
-            barRbRoot.transform.SetParent(BarRigidbodiesRoot); 
             GameObject newBarRB = GameObject.CreatePrimitive(PrimitiveType.Cube);
             newBarRB.name = "bar" + currIndex;
-            newBarRB.transform.SetParent(barRbRoot.transform);
-            newBarRB.transform.localPosition = new Vector3(0, 0.5f, 0); // move block so that the edge lines up with the bar origin. 
+            newBarRB.transform.position = new Vector3(0, 0.5f, 0); // move block so that the edge lines up with the bar origin. 
+            newBarRB.transform.SetParent(BarRigidbodiesRoot);
             newBarRB.transform.rotation = Quaternion.Euler(0, 0, 0);
 
             newBarRB.AddComponent<BarController>(); //Automatically adds rigidbody and config joint as well, so must run this first
@@ -190,6 +186,7 @@ public class SpectrumVisualizer : MonoBehaviour
 
             newBarRB.GetComponent<Rigidbody>().useGravity = true;
             newBarRB.GetComponent<Rigidbody>().drag = 20;
+            newBarRB.GetComponent<BoxCollider>().sharedMaterial = barPhysicsMat; 
         }
 
         while (BarOriginsRoot.childCount > totalBars)
@@ -223,6 +220,7 @@ public class SpectrumVisualizer : MonoBehaviour
         for(int b = 0; b < BarOriginsRoot.childCount; b++)
         {
             var currBarOrigin = BarOriginsRoot.GetChild(b);
+            Transform currBarRb = BarRigidbodiesRoot.GetChild(b);
 
             float t = b / (float)BarOriginsRoot.childCount;
 
@@ -338,7 +336,7 @@ public class SpectrumVisualizer : MonoBehaviour
                 float spectrumSample = spectrumData[spectrumIndex];
 
                 Debug.DrawRay(currOrigin.position, currOrigin.up * barMaxHeight, Color.white, 1);
-                currOrigin.GetChild(0).transform.position = currOrigin.position + (currOrigin.up * barMaxHeight * Mathf.Clamp01(spectrumSample * barHeightMultiplier));
+                currOrigin.GetChild(0).transform.position = currOrigin.position + (currOrigin.up * barMaxHeight * Mathf.Clamp01(spectrumSample * barHeightMultiplier)) / 2;
 
             }
         }

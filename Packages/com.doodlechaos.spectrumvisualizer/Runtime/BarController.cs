@@ -46,7 +46,7 @@ public class BarController : MonoBehaviour //proportional–integral–derivative co
         float force = error * pGain + errorDerivative * dGain;
 
         // Apply the force to the Rigidbody
-        GetComponentInChildren<Rigidbody>().AddForce(force * (target.position - transform.position).normalized, ForceMode.Force); //PID Controller
+        GetComponent<Rigidbody>().AddForce(force * (target.position - transform.position).normalized, ForceMode.Force); //PID Controller
 
         // Remember the last error for the next FixedUpdate
         lastError = error;
@@ -73,7 +73,7 @@ public class BarController : MonoBehaviour //proportional–integral–derivative co
     public void UpdateBarScale()
     {
         float length = Vector3.Distance(origin.position, transform.position);
-        //transform.parent.localScale = new Vector3(transform.parent.localScale.x, length, transform.parent.localScale.z);
+        transform.localScale = new Vector3(transform.localScale.x, length * 2, transform.localScale.z);
     }
 
 }
