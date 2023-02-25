@@ -52,16 +52,64 @@ public class SpectrumVisualizer : MonoBehaviour
 
     public void Start()
     {
-        GetMinMaxSampleValue(inputAudio, out spectrumSampleMinValue, out spectrumSampleMaxValue); 
+        GetMinMaxSampleValue(inputAudio, out spectrumSampleMinValue, out spectrumSampleMaxValue);
+        CustomOnValidate(); 
     }
 
     public void CustomOnValidate()
     {
-        if (testButton)
+        // 1. Build the empty gameobject roots in the hierarchy if they don't exist
+        ConstructRootsIfMissing();
+
+        // 2. Check if the input mode changed
+        if (previousAudioInputMode != audioInputMode)
         {
-            testButton = false;
-            BarOriginsRoot.localScale = Vector3.one;
+            if(audioInputMode == AudioInputMode.Microphone)
+            {
+                string microphoneName = Microphone.devices[0];
+                Debug.Log("Mic name: " + microphoneName);
+                GetComponent<AudioSource>().clip = Microphone.Start(microphoneName, true, 20, AudioSettings.outputSampleRate);
+                GetComponent<AudioSource>().Play();
+            }
+            previousAudioInputMode = audioInputMode; 
         }
+
+        // 3. Initialize any variables that may be null
+        if (deathRow == null) { deathRow = new List<GameObject>();}
+        lr = GetComponent<LineRenderer>();
+
+        // 4. Create or destroy necessary bars and their children
+        CreateAndDestroyNecessaryBars();
+
+        // 5. Set the bar origin transform correctly based on the line normal
+        UpdateBarOriginTransforms();
+
+        // 6. Update the config joints to match this new axis
+        UpdateBarConfigJoints();
+
+        // 7. If the bar width was changed, update it
+        if (barWidth != prevBarWidth)
+        {
+            foreach(var bar in BarRigidbodiesRoot.GetComponentsInChildren<Transform>())
+            {
+                if (bar == BarRigidbodiesRoot) //Don't change the scale of the root!
+                    continue;
+                bar.localScale = new Vector3(barWidth, bar.localScale.y, bar.localScale.z);
+            }
+        }
+    } 
+
+    private void UpdateBarConfigJoints()
+    {
+        foreach(var barRb in BarRigidbodiesRoot.GetComponentsInChildren<BarController>())
+        {
+            barRb.UpdateConfigJoint(sliderHeightLimit);
+        }
+    }
+
+    private void ConstructRootsIfMissing()
+    {
+
         //Build the roots if they don't exist yet
         if (transform.childCount <= 0 || transform.GetChild(0).name != "BarOriginsRoot")
         {
@@ -72,7 +120,7 @@ public class SpectrumVisualizer : MonoBehaviour
         }
         else
         {
-            BarOriginsRoot = transform.GetChild(0); 
+            BarOriginsRoot = transform.GetChild(0);
         }
         //Build the roots if they don't exist yet
         if (transform.childCount <= 1 || transform.GetChild(1).name != "BarRigidbodiesRoot")
@@ -95,43 +143,9 @@ public class SpectrumVisualizer : MonoBehaviour
         }
         else
         {
-            PurgatoryRoot = transform.GetChild(2); 
+            PurgatoryRoot = transform.GetChild(2);
         }
-
-        //Check if the input mode changed
-        if(previousAudioInputMode != audioInputMode)
-        {
-            if(audioInputMode == AudioInputMode.Microphone)
-            {
-                string microphoneName = Microphone.devices[0];
-                Debug.Log("Mic name: " + microphoneName);
-                GetComponent<AudioSource>().clip = Microphone.Start(microphoneName, true, 20, AudioSettings.outputSampleRate);
-                GetComponent<AudioSource>().Play();
-            }
-            previousAudioInputMode = audioInputMode; 
-        }
-
-        if (deathRow == null)
-        {
-            deathRow = new List<GameObject>();
-        }
-        lr = GetComponent<LineRenderer>();
-
-        CreateAndDestroyNecessaryBars();
-
-        //SetBarOrigins();
-        UpdateBarOriginTransforms();
-
-        if (barWidth != prevBarWidth)
-        {
-            foreach(var bar in BarRigidbodiesRoot.GetComponentsInChildren<Transform>())
-            {
-                if (bar == BarRigidbodiesRoot) //Don't change the scale of the root!
-                    continue;
-                bar.localScale = new Vector3(barWidth, bar.localScale.y, bar.localScale.z);
-            }
-        }
-    } 
+    }
 
     private void CreateAndDestroyNecessaryBars()
     {
@@ -155,33 +169,19 @@ public class SpectrumVisualizer : MonoBehaviour
             barTarget.transform.SetParent(barOrigin.transform);
             DestroyImmediate(barTarget.GetComponent<SphereCollider>()); 
 
-            GameObject newBar = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            newBar.name = "bar" + currIndex;
-            newBar.transform.position = new Vector3(0, 0.5f, 0); // move block so that the edge lines up with the bar origin. 
-            newBar.transform.SetParent(BarRigidbodiesRoot);
-            newBar.transform.rotation = Quaternion.Euler(0, 0, 0);
+            GameObject newBarRB = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            newBarRB.name = "bar" + currIndex;
+            newBarRB.transform.position = new Vector3(0, 0.5f, 0); // move block so that the edge lines up with the bar origin. 
+            newBarRB.transform.SetParent(BarRigidbodiesRoot);
+            newBarRB.transform.rotation = Quaternion.Euler(0, 0, 0);
 
-            newBar.AddComponent<PID_Controller>(); //Automatically adds rigidbody as well
+            newBarRB.AddComponent<BarController>(); //Automatically adds rigidbody and config joint as well, so must run this first
+            newBarRB.GetComponent<BarController>().InitBar(barTarget.transform, barOrigin.transform, PID_Pgain, PID_Dgain);
 
-            newBar.GetComponent<PID_Controller>().SetTarget(barTarget.transform);
-
-            newBar.GetComponent<Rigidbody>().useGravity = true;
-            newBar.GetComponent<Rigidbody>().drag = 20;
-
-            newBar.AddComponent<ConfigurableJoint>();
-            newBar.GetComponent<ConfigurableJoint>().anchor = Vector3.zero;
-            newBar.GetComponent<ConfigurableJoint>().autoConfigureConnectedAnchor = false;
-            newBar.GetComponent<ConfigurableJoint>().xMotion = ConfigurableJointMotion.Limited;
-            newBar.GetComponent<ConfigurableJoint>().yMotion = ConfigurableJointMotion.Locked;
-            newBar.GetComponent<ConfigurableJoint>().zMotion = ConfigurableJointMotion.Locked;
-            newBar.GetComponent<ConfigurableJoint>().angularXMotion = ConfigurableJointMotion.Locked;
-            newBar.GetComponent<ConfigurableJoint>().angularYMotion = ConfigurableJointMotion.Locked;
-            newBar.GetComponent<ConfigurableJoint>().angularZMotion = ConfigurableJointMotion.Locked;
-            SoftJointLimit sjl = new SoftJointLimit();
-            sjl.limit = 3;
-            newBar.GetComponent<ConfigurableJoint>().linearLimit = sjl; 
-
+            newBarRB.GetComponent<Rigidbody>().useGravity = true;
+            newBarRB.GetComponent<Rigidbody>().drag = 20;
         }
+
         while (BarOriginsRoot.childCount > totalBars)
         {
             var currBar = BarOriginsRoot.GetChild(BarOriginsRoot.childCount - 1);
@@ -210,42 +210,22 @@ public class SpectrumVisualizer : MonoBehaviour
         }
 
         //TODO: Choose which axis the tangent is on
-
         for(int b = 0; b < BarOriginsRoot.childCount; b++)
         {
             var currBarOrigin = BarOriginsRoot.GetChild(b);
-            var currBarRigidbody = BarRigidbodiesRoot.GetChild(b);
-            var currBarTarget = currBarOrigin.GetChild(0); 
+            Transform currBarRb = BarRigidbodiesRoot.GetChild(b);
+
             float t = b / (float)BarOriginsRoot.childCount;
 
             //Set the bar origin to the correct position
             currBarOrigin.transform.position = GetPointOnLineRenderer(lr, totalLineLength, t);
-            Transform currBarRb = BarRigidbodiesRoot.GetChild(b);
-            currBarRb.GetComponent<ConfigurableJoint>().connectedAnchor = currBarOrigin.transform.position;
 
             //and rotate it based on the normal to the line at that point
             Vector3 normal = GetNormalOnLineRenderer(lr, totalLineLength, t);
             Debug.DrawRay(currBarOrigin.transform.position, -normal, Color.green, 1);
 
-            currBarOrigin.transform.LookAt(currBarOrigin.transform.position - normal, currBarOrigin.transform.up);
+            currBarOrigin.transform.LookAt(currBarOrigin.transform.position - normal, Vector3.up);
             currBarOrigin.transform.Rotate(Vector3.right, 90, Space.Self);
-
-            currBarRb.GetComponent<ConfigurableJoint>().axis = Vector3.up; // (currBarOrigin.position - currBarTarget.position); //normal;
-            SoftJointLimit sjl = new SoftJointLimit();
-            sjl.limit = sliderHeightLimit;
-            currBarRb.GetComponent<ConfigurableJoint>().linearLimit = sjl;
-
-            currBarRigidbody.GetComponent<PID_Controller>().SetGains(PID_Pgain, PID_Dgain);
-
-            currBarRb.GetComponent<ConfigurableJoint>().angularXMotion = ConfigurableJointMotion.Free;
-            currBarRb.GetComponent<ConfigurableJoint>().angularYMotion = ConfigurableJointMotion.Free;
-            currBarRb.GetComponent<ConfigurableJoint>().angularZMotion = ConfigurableJointMotion.Free;
-            currBarRb.rotation = Quaternion.Euler(0, 0, currBarOrigin.eulerAngles.z);
-            Debug.Log("setting rotation to: " + Quaternion.Euler(0, 0, currBarOrigin.eulerAngles.z).eulerAngles.ToString());
-            currBarRb.GetComponent<ConfigurableJoint>().angularXMotion = ConfigurableJointMotion.Locked;
-            currBarRb.GetComponent<ConfigurableJoint>().angularYMotion = ConfigurableJointMotion.Locked;
-            currBarRb.GetComponent<ConfigurableJoint>().angularZMotion = ConfigurableJointMotion.Locked;
-
         }
     }
 
@@ -325,6 +305,8 @@ public class SpectrumVisualizer : MonoBehaviour
         if (BarOriginsRoot == null)
             return;
 
+        UpdateBarConfigJoints(); //TODO seems like a waste to do this every time, but may be necessary to prevent axis from not correctly being set.
+
         if (audioInputMode == AudioInputMode.LiveListen || audioInputMode == AudioInputMode.Microphone)
         {
             GetComponent<AudioSource>().GetSpectrumData(spectrumData, 0, fttwindow);
@@ -348,8 +330,6 @@ public class SpectrumVisualizer : MonoBehaviour
 
                 Debug.DrawRay(currOrigin.position, currOrigin.up * barMaxHeight, Color.white, 1);
                 currOrigin.GetChild(0).transform.position = currOrigin.position + (currOrigin.up * barMaxHeight * Mathf.Clamp01(spectrumSample * barHeightMultiplier));
-
-                //BarRigidbodiesRoot.GetChild(i).transform.rotation = currOrigin.transform.rotation; //TODO: This messes up the rotation
 
             }
         }
