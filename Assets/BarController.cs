@@ -46,7 +46,7 @@ public class BarController : MonoBehaviour //proportional–integral–derivative co
         float force = error * pGain + errorDerivative * dGain;
 
         // Apply the force to the Rigidbody
-        GetComponent<Rigidbody>().AddForce(force * (target.position - transform.position).normalized, ForceMode.Force); //PID Controller
+        GetComponentInChildren<Rigidbody>().AddForce(force * (target.position - transform.position).normalized, ForceMode.Force); //PID Controller
 
         // Remember the last error for the next FixedUpdate
         lastError = error;
@@ -61,7 +61,6 @@ public class BarController : MonoBehaviour //proportional–integral–derivative co
         sjl.limit = sliderHeightLimit;
         GetComponent<ConfigurableJoint>().linearLimit = sjl;
 
-
         GetComponent<ConfigurableJoint>().angularXMotion = ConfigurableJointMotion.Free;
         GetComponent<ConfigurableJoint>().angularYMotion = ConfigurableJointMotion.Free;
         GetComponent<ConfigurableJoint>().angularZMotion = ConfigurableJointMotion.Free;
@@ -69,7 +68,12 @@ public class BarController : MonoBehaviour //proportional–integral–derivative co
         GetComponent<ConfigurableJoint>().angularXMotion = ConfigurableJointMotion.Locked;
         GetComponent<ConfigurableJoint>().angularYMotion = ConfigurableJointMotion.Locked;
         GetComponent<ConfigurableJoint>().angularZMotion = ConfigurableJointMotion.Locked;
+    }
 
+    public void UpdateBarScale()
+    {
+        float length = Vector3.Distance(origin.position, transform.position);
+        //transform.parent.localScale = new Vector3(transform.parent.localScale.x, length, transform.parent.localScale.z);
     }
 
 }

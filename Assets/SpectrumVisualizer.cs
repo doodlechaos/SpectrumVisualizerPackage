@@ -29,7 +29,12 @@ public class SpectrumVisualizer : MonoBehaviour
     private List<GameObject> deathRow = new List<GameObject>();
 
     [SerializeField] private int totalBars;
+    [SerializeField] private float barDepth;
+    private float prevBarDepth;
+
     [SerializeField] private float barWidth;
+    private float prevBarWidth;
+
     [SerializeField] private float barMaxHeight;
     [SerializeField] private float PID_Pgain;
     [SerializeField] private float PID_Dgain;
@@ -38,7 +43,6 @@ public class SpectrumVisualizer : MonoBehaviour
     private float spectrumSampleMaxValue;
     private float spectrumSampleMinValue;
 
-    private float prevBarWidth;
 
     [SerializeField] private float barHeightMultiplier;
 
@@ -85,25 +89,26 @@ public class SpectrumVisualizer : MonoBehaviour
         UpdateBarOriginTransforms();
 
         // 6. Update the config joints to match this new axis
-        UpdateBarConfigJoints();
+        UpdateBars();
 
         // 7. If the bar width was changed, update it
-        if (barWidth != prevBarWidth)
+        if (barDepth != prevBarDepth || prevBarWidth != barWidth)
         {
             foreach(var bar in BarRigidbodiesRoot.GetComponentsInChildren<Transform>())
             {
                 if (bar == BarRigidbodiesRoot) //Don't change the scale of the root!
                     continue;
-                bar.localScale = new Vector3(barWidth, bar.localScale.y, bar.localScale.z);
+                bar.localScale = new Vector3(barDepth, bar.localScale.y, barWidth);
             }
         }
     } 
 
-    private void UpdateBarConfigJoints()
+    private void UpdateBars()
     {
         foreach(var barRb in BarRigidbodiesRoot.GetComponentsInChildren<BarController>())
         {
             barRb.UpdateConfigJoint(sliderHeightLimit);
+            barRb.UpdateBarScale();
         }
     }
 
@@ -167,12 +172,17 @@ public class SpectrumVisualizer : MonoBehaviour
             barTarget.GetComponent<SphereCollider>();
             barTarget.GetComponent<MeshRenderer>().enabled = false; //TODO add inspector toggle for this
             barTarget.transform.SetParent(barOrigin.transform);
-            DestroyImmediate(barTarget.GetComponent<SphereCollider>()); 
+            DestroyImmediate(barTarget.GetComponent<SphereCollider>());
 
+            //Need to set the origin of the rb on the side so that we can scale it up without changing the position and messing up the velocity
+            GameObject barRbRoot = new GameObject("barRbRoot" + currIndex);
+            barRbRoot.transform.localScale = Vector3.one;
+            barRbRoot.transform.position = Vector3.zero;
+            barRbRoot.transform.SetParent(BarRigidbodiesRoot); 
             GameObject newBarRB = GameObject.CreatePrimitive(PrimitiveType.Cube);
             newBarRB.name = "bar" + currIndex;
-            newBarRB.transform.position = new Vector3(0, 0.5f, 0); // move block so that the edge lines up with the bar origin. 
-            newBarRB.transform.SetParent(BarRigidbodiesRoot);
+            newBarRB.transform.SetParent(barRbRoot.transform);
+            newBarRB.transform.localPosition = new Vector3(0, 0.5f, 0); // move block so that the edge lines up with the bar origin. 
             newBarRB.transform.rotation = Quaternion.Euler(0, 0, 0);
 
             newBarRB.AddComponent<BarController>(); //Automatically adds rigidbody and config joint as well, so must run this first
@@ -213,7 +223,6 @@ public class SpectrumVisualizer : MonoBehaviour
         for(int b = 0; b < BarOriginsRoot.childCount; b++)
         {
             var currBarOrigin = BarOriginsRoot.GetChild(b);
-            Transform currBarRb = BarRigidbodiesRoot.GetChild(b);
 
             float t = b / (float)BarOriginsRoot.childCount;
 
@@ -305,7 +314,7 @@ public class SpectrumVisualizer : MonoBehaviour
         if (BarOriginsRoot == null)
             return;
 
-        UpdateBarConfigJoints(); //TODO seems like a waste to do this every time, but may be necessary to prevent axis from not correctly being set.
+        UpdateBars(); //TODO seems like a waste to do this every time, but may be necessary to prevent axis from not correctly being set.
 
         if (audioInputMode == AudioInputMode.LiveListen || audioInputMode == AudioInputMode.Microphone)
         {
