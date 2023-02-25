@@ -1,5 +1,8 @@
+using DSPLib;
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 [ExecuteInEditMode]
@@ -10,7 +13,7 @@ public class SpectrumVisualizer : MonoBehaviour
 
     [SerializeField] private bool debugEnabled; 
 
-    [HideInInspector] public AudioClip inputAudio;
+    public AudioClip inputAudioClip;
     [Space(15), Range(64, 8192)]
 
     [SerializeField] public int visualizerSamples = 64;
@@ -70,13 +73,12 @@ public class SpectrumVisualizer : MonoBehaviour
     public Material stalkMaterial;
     public Material capMaterial;
 
-    [SerializeField] private float audioFileTime;
-
+    [SerializeField] public float audioFileTime;
 
     public void Start()
     {
         Physics.IgnoreLayerCollision(VisualizerLayer, VisualizerLayer); //Necessary to prevent self collision with config joint 
-        GetMinMaxSampleValue(inputAudio, out spectrumSampleMinValue, out spectrumSampleMaxValue);
+        GetMinMaxSampleValue(inputAudioClip, out spectrumSampleMinValue, out spectrumSampleMaxValue);
         CustomOnValidate();
         BarRigidbodiesRoot.gameObject.SetActive(true);
         BarStalksRoot.gameObject.SetActive(true);
@@ -408,42 +410,78 @@ public class SpectrumVisualizer : MonoBehaviour
         UpdateBars();
 
         float[] spectrumData = new float[visualizerSamples];
-        //Trim the edges of the spectrum data as desired
-        int startIndex = (int)(spectrumStartFraction * spectrumData.Length);
-        int stopIndex = (int)(spectrumEndFraction * spectrumData.Length);
+
 
         if (audioInputMode == AudioInputMode.LiveListen || audioInputMode == AudioInputMode.Microphone)
         {
             GetComponent<AudioSource>().GetSpectrumData(spectrumData, 0, fttwindow);
-
-            float[] spectrumSubset = new float[stopIndex - startIndex];
-            System.Array.Copy(spectrumData, startIndex, spectrumSubset, 0, spectrumSubset.Length);
-
-            //Move the bars based on the spectrum data
-            for (int i = 0; i < BarOriginsRoot.childCount; i++)
-            {
-                var currOrigin = BarOriginsRoot.GetChild(i);
-                // t is the percent index of the spectrum data we are sampling. 
-                float t = i /(float)BarRigidbodiesRoot.childCount;
-                int spectrumIndex = Mathf.FloorToInt(spectrumSubset.Length * t);
-                //Debug.Log("spectrumData.length: " + spectrumData.Length + " SpectrumIndex: " + spectrumIndex);
-                float spectrumSample = spectrumData[spectrumIndex];
-
-                if(debugEnabled)
-                    Debug.DrawRay(currOrigin.position, currOrigin.up * barMaxHeight, Color.white, 1);
-
-                Transform currBarTarget = currOrigin.GetChild(0).transform;
-                Vector3 targetIdealPosition = currOrigin.position + (currOrigin.up * barMaxHeight * Mathf.Clamp01(spectrumSample * barHeightMultiplier)) / 2;
-                currBarTarget.position = Vector3.Lerp(currBarTarget.position, targetIdealPosition, barTargetLerpFraction);
-
-            }
         }
-        if (audioInputMode == AudioInputMode.AudioFile)
+        else if (audioInputMode == AudioInputMode.AudioFile)
         {
-            inputAudio.GetData(spectrumData, Mathf.RoundToInt(inputAudio.frequency * audioFileTime));
+            inputAudioClip.GetData(spectrumData, Mathf.RoundToInt(inputAudioClip.frequency * audioFileTime));
+
+            FFT fft = new FFT();
+            fft.Initialize((uint)spectrumData.Length);
+
+            // Apply our chosen FFT Window
+            double[] windowCoefs = DSP.Window.Coefficients(DSP.Window.Type.BH92, (uint)spectrumData.Length);
+            double[] scaledSpectrumChunk = DSP.Math.Multiply(Array.ConvertAll(spectrumData, x => (double)x), windowCoefs);
+            double scaleFactor = DSP.Window.ScaleFactor.Signal(windowCoefs);
+
+            System.Numerics.Complex[] fftSpectrum = fft.Execute(scaledSpectrumChunk);
+            double[] scaledFFTSpectrum = DSP.ConvertComplex.ToMagnitude(fftSpectrum);
+            scaledFFTSpectrum = DSP.Math.Multiply(scaledFFTSpectrum, scaleFactor);
+
+            for (int i = 0; i < scaledFFTSpectrum.Length; i++)
+            {
+                scaledFFTSpectrum[i] *= 1; // TODO bonusScaleMyFFT;
+            }
+
+            double[] halfFFTout = new double[scaledFFTSpectrum.Length];
+            Array.Copy(scaledFFTSpectrum, halfFFTout, scaledFFTSpectrum.Length / 2);
+
+            // These 1024 magnitude values correspond (roughly) to a single point in the audio timeline
+            spectrumData = ConvertToFloatArray(scaledFFTSpectrum); 
             
         }
 
+        //For both input modes, we must map to the bars
+
+        //Trim the edges of the spectrum data as desired
+        int startIndex = (int)(spectrumStartFraction * spectrumData.Length);
+        int stopIndex = (int)(spectrumEndFraction * spectrumData.Length);
+
+        float[] spectrumSubset = new float[stopIndex - startIndex];
+        System.Array.Copy(spectrumData, startIndex, spectrumSubset, 0, spectrumSubset.Length);
+
+        //Move the bars based on the spectrum data
+        for (int i = 0; i < BarOriginsRoot.childCount; i++)
+        {
+            var currOrigin = BarOriginsRoot.GetChild(i);
+            // t is the percent index of the spectrum data we are sampling. 
+            float t = i / (float)BarRigidbodiesRoot.childCount;
+            int spectrumIndex = Mathf.FloorToInt(spectrumSubset.Length * t);
+            //Debug.Log("spectrumData.length: " + spectrumData.Length + " SpectrumIndex: " + spectrumIndex);
+            float spectrumSample = spectrumData[spectrumIndex];
+
+            if (debugEnabled)
+                Debug.DrawRay(currOrigin.position, currOrigin.up * barMaxHeight, Color.white, 1);
+
+            Transform currBarTarget = currOrigin.GetChild(0).transform;
+            Vector3 targetIdealPosition = currOrigin.position + (currOrigin.up * barMaxHeight * Mathf.Clamp01(spectrumSample * barHeightMultiplier)) / 2;
+            currBarTarget.position = Vector3.Lerp(currBarTarget.position, targetIdealPosition, barTargetLerpFraction);
+        }
+
+    }
+
+    private float[] ConvertToFloatArray(double[] arr)
+    {
+        float[] farr = new float[arr.Length];
+        for(int i = 0; i < arr.Length; i++)
+        {
+            farr[i] = (float)arr[i]; 
+        }
+        return farr; 
     }
 
     public static void GetMinMaxSampleValue(AudioClip clip, out float min, out float max)
@@ -477,5 +515,17 @@ public class SpectrumVisualizer : MonoBehaviour
         {
             SetLayerRecursively(child.gameObject, layer);
         }
+    }
+
+    public int getIndexFromTime(float curTime, float clipLength, int numTotalSamples)
+    {
+        float lengthPerSample = clipLength / (float)numTotalSamples;
+
+        return Mathf.FloorToInt(curTime / lengthPerSample);
+    }
+
+    public float getTimeFromIndex(int index, int sampleRate)
+    {
+        return ((1f / (float)sampleRate) * index);
     }
 }

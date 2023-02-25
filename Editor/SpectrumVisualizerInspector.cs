@@ -39,7 +39,7 @@ public class SpectrumVisualizerInspector : Editor
         //If we are in audio input mode, display the audio input field
         if((int)SpectrumVisualizer.AudioInputMode.AudioFile == audioInputMode.enumValueIndex)
         {
-            sv.inputAudio = (AudioClip)EditorGUILayout.ObjectField("Input Audio", inputAudio.objectReferenceValue, typeof(AudioClip), true);
+            //sv.inputAudioClip = (AudioClip)EditorGUILayout.ObjectField("Input Audio", inputAudio.objectReferenceValue, typeof(AudioClip), true);
         }
 
 
