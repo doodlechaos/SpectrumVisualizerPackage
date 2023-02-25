@@ -110,6 +110,7 @@ public class SpectrumVisualizer : MonoBehaviour
         {
             barRb.UpdateConfigJoint(sliderHeightLimit);
             barRb.UpdateBarScale();
+            barRb.UpdatePIDForce(); 
         }
     }
 

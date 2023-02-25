@@ -31,7 +31,7 @@ public class BarController : MonoBehaviour //proportional–integral–derivative co
         GetComponent<ConfigurableJoint>().angularZMotion = ConfigurableJointMotion.Locked;
     }
 
-    private void FixedUpdate()
+    public void UpdatePIDForce()
     {
         if (target == null)
             return;
