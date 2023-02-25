@@ -8,7 +8,7 @@ using UnityEngine;
 public class SpectrumVisualizer : MonoBehaviour
 {
 
-    [SerializeField] private bool physicsEnabled; 
+    [SerializeField] private bool debugEnabled; 
 
     [HideInInspector] public AudioClip inputAudio;
     [Space(15), Range(64, 8192)]
@@ -39,6 +39,7 @@ public class SpectrumVisualizer : MonoBehaviour
     [SerializeField] private float barMaxHeight;
     [SerializeField] private float barCapYDepth;
 
+    [SerializeField] private float barTargetLerpFraction;
     [SerializeField] private float PID_Pgain;
     [SerializeField] private float PID_Dgain;
     [SerializeField] private float BarRigidbodyDrag;
@@ -52,6 +53,7 @@ public class SpectrumVisualizer : MonoBehaviour
 
     [SerializeField] private float barHeightMultiplier;
     [SerializeField] private Gradient barColorGradient;
+    [SerializeField] private float barHeightGlowStrength;
 
     private LineRenderer lr;
     private Transform BarOriginsRoot;
@@ -171,8 +173,7 @@ public class SpectrumVisualizer : MonoBehaviour
             //barRb.transform.GetComponent<Rigidbody>().MoveRotation(barRb.origin.rotation);
             barRb.transform.rotation = barRb.origin.rotation;
 
-            //barRb.UpdateConfigJoint(sliderHeightLimit);
-            barRb.UpdateBarStalk();
+            barRb.UpdateBarStalk(barHeightGlowStrength);
             if (!Application.isPlaying)
                 continue; 
             barRb.UpdatePIDForce(secondsPerFixedUpdate, overallForceScaler);
@@ -325,7 +326,9 @@ public class SpectrumVisualizer : MonoBehaviour
 
             //and rotate it based on the normal to the line at that point
             Vector3 normal = GetNormalOnLineRenderer(lr, totalLineLength, t);
-            Debug.DrawRay(currBarOrigin.transform.position, -normal, Color.green, 1);
+
+            if(debugEnabled)
+                Debug.DrawRay(currBarOrigin.transform.position, -normal, Color.green, 1);
 
             currBarOrigin.transform.LookAt(currBarOrigin.transform.position - normal, Vector3.up);
             currBarOrigin.transform.Rotate(Vector3.right, 90, Space.Self);
@@ -426,8 +429,12 @@ public class SpectrumVisualizer : MonoBehaviour
                 //Debug.Log("spectrumData.length: " + spectrumData.Length + " SpectrumIndex: " + spectrumIndex);
                 float spectrumSample = spectrumData[spectrumIndex];
 
-                Debug.DrawRay(currOrigin.position, currOrigin.up * barMaxHeight, Color.white, 1);
-                currOrigin.GetChild(0).transform.position = currOrigin.position + (currOrigin.up * barMaxHeight * Mathf.Clamp01(spectrumSample * barHeightMultiplier)) / 2;
+                if(debugEnabled)
+                    Debug.DrawRay(currOrigin.position, currOrigin.up * barMaxHeight, Color.white, 1);
+
+                Transform currBarTarget = currOrigin.GetChild(0).transform;
+                Vector3 targetIdealPosition = currOrigin.position + (currOrigin.up * barMaxHeight * Mathf.Clamp01(spectrumSample * barHeightMultiplier)) / 2;
+                currBarTarget.position = Vector3.Lerp(currBarTarget.position, targetIdealPosition, barTargetLerpFraction);
 
             }
         }

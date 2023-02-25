@@ -74,25 +74,8 @@ public class BarController : MonoBehaviour //proportional–integral–derivative co
         }
     }
 
-    public void UpdateConfigJoint(float sliderHeightLimit)
-    {
-        GetComponent<ConfigurableJoint>().connectedAnchor = origin.transform.position;
 
-        GetComponent<ConfigurableJoint>().axis = Vector3.up; // (currBarOrigin.position - currBarTarget.position); //normal;
-        SoftJointLimit sjl = new SoftJointLimit();
-        sjl.limit = sliderHeightLimit;
-        GetComponent<ConfigurableJoint>().linearLimit = sjl;
-
-        GetComponent<ConfigurableJoint>().angularXMotion = ConfigurableJointMotion.Free;
-        GetComponent<ConfigurableJoint>().angularYMotion = ConfigurableJointMotion.Free;
-        GetComponent<ConfigurableJoint>().angularZMotion = ConfigurableJointMotion.Free;
-        transform.rotation = origin.rotation;
-        GetComponent<ConfigurableJoint>().angularXMotion = ConfigurableJointMotion.Locked;
-        GetComponent<ConfigurableJoint>().angularYMotion = ConfigurableJointMotion.Locked;
-        GetComponent<ConfigurableJoint>().angularZMotion = ConfigurableJointMotion.Locked;
-    }
-
-    public void UpdateBarStalk()
+    public void UpdateBarStalk(float heightGlowStrength)
     {
         //Debug.Log("updating bar stalk: " + transform.name + ": " + transform.position + " rbPos: " + GetComponent<Rigidbody>().position);
         var dropDown = (origin.up * transform.localScale.y / 2);
@@ -115,7 +98,13 @@ public class BarController : MonoBehaviour //proportional–integral–derivative co
         float length = Vector3.Distance(origin.position, transform.position);
         stalk.localScale = new Vector3(stalk.localScale.x, length + transform.localScale.y, stalk.localScale.z);
         stalk.transform.position = Vector3.Lerp(origin.position, transform.position, 0.5f) - dropDown; //Should be half way between the origin and cap
-       
+
+        //Update the color emission based on how long the length is
+        Material currMat = GetComponent<Renderer>().sharedMaterial;
+        currMat.SetVector("_EmissionColor", currMat.color * length / 5);
+
+        Material currMatStalk = stalk.GetComponent<Renderer>().sharedMaterial;
+        currMatStalk.SetVector("_EmissionColor", currMat.color * length * heightGlowStrength);
     }
 
 }
