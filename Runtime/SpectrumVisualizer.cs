@@ -118,14 +118,23 @@ public class SpectrumVisualizer : MonoBehaviour
             {
                 if (bar == BarRigidbodiesRoot) //Don't change the scale of the root!
                     continue;
-                bar.localScale = new Vector3(barDepth, bar.localScale.y, barWidth);
+                bar.localScale = new Vector3(barWidth, barCapYDepth, barDepth);
+            }
+            foreach (var stalk in BarStalksRoot.GetComponentsInChildren<Transform>())
+            {
+                if (stalk == BarStalksRoot) //Don't change the scale of the root!
+                    continue;
+                stalk.localScale = new Vector3(barWidth, stalk.localScale.y, barDepth);
             }
         }
 
         // Make sure that all the gameobjects are set to the visualizer layer for no self collision:
         SetLayerRecursively(gameObject, VisualizerLayer);
-        BarRigidbodiesRoot.gameObject.SetActive(false);
-        BarStalksRoot.gameObject.SetActive(false);
+        if (!Application.isPlaying)
+        {
+            BarRigidbodiesRoot.gameObject.SetActive(false);
+            BarStalksRoot.gameObject.SetActive(false);
+        }
     }
 
 
@@ -139,7 +148,7 @@ public class SpectrumVisualizer : MonoBehaviour
             barRb.UpdateBarStalk();
             if (!Application.isPlaying)
                 continue; 
-            barRb.UpdatePIDForce(secondsPerFixedUpdate); 
+            barRb.UpdatePIDForce(secondsPerFixedUpdate);
         }
 
     }
@@ -353,7 +362,7 @@ public class SpectrumVisualizer : MonoBehaviour
         return lineRenderer.GetPosition(lineRenderer.positionCount - 1);
     }
 
-    // Update is called once per frame
+    // Only for procedural genration cleanup
     void Update()
     {
         while(deathRow.Count > 0)
@@ -363,6 +372,7 @@ public class SpectrumVisualizer : MonoBehaviour
         }
     }
 
+    /*
     private void FixedUpdate()
     {
         if (!Application.isPlaying)
@@ -375,6 +385,7 @@ public class SpectrumVisualizer : MonoBehaviour
         }
         fixedUpdateTimer += Time.fixedDeltaTime; 
     }
+    */
 
     public void StepUpdate()
     {
@@ -439,7 +450,6 @@ public class SpectrumVisualizer : MonoBehaviour
 
     private void SetLayerRecursively(GameObject obj, int layer)
     {
-        Debug.Log("setting: " + obj.name + " to layer: " + layer);
         obj.layer = layer;
         foreach (Transform child in obj.transform)
         {

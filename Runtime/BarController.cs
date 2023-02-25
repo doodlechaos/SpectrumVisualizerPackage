@@ -60,6 +60,15 @@ public class BarController : MonoBehaviour //proportional–integral–derivative co
 
         // Remember the last error for the next FixedUpdate
         lastError = error;
+
+
+        // If the distance between the origin and the transform went negative, move it
+        float distFromOrigin = Vector3.Dot((transform.position - origin.position), origin.position);
+        if(distFromOrigin < 0)
+        {
+            //Debug.LogError("detected below line: " + distFromOrigin);
+            //GetComponent<Rigidbody>().MovePosition(origin.position);
+        }
     }
 
     public void UpdateConfigJoint(float sliderHeightLimit)
@@ -82,9 +91,10 @@ public class BarController : MonoBehaviour //proportional–integral–derivative co
 
     public void UpdateBarStalk()
     {
+        Debug.Log("updating bar stalk: " + transform.name + ": " + transform.position + " rbPos: " + GetComponent<Rigidbody>().position);
         float length = Vector3.Distance(origin.position, transform.position);
-        stalk.localScale = new Vector3(stalk.localScale.x, length, stalk.localScale.z);
-        stalk.transform.position = Vector3.Lerp(origin.position, transform.position, 0.5f); //Should be half way between the origin and cap
+        stalk.localScale = new Vector3(stalk.localScale.x, length + transform.localScale.y, stalk.localScale.z);
+        stalk.transform.position = Vector3.Lerp(origin.position, transform.position, 0.5f) - (origin.up * transform.localScale.y / 2 ); //Should be half way between the origin and cap
         stalk.transform.rotation = origin.rotation;
     }
 
