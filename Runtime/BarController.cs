@@ -96,8 +96,7 @@ public class BarController : MonoBehaviour //proportional–integral–derivative co
     {
         //Debug.Log("updating bar stalk: " + transform.name + ": " + transform.position + " rbPos: " + GetComponent<Rigidbody>().position);
         var dropDown = (origin.up * transform.localScale.y / 2);
-        stalk.transform.rotation = origin.rotation;
-
+        stalk.transform.rotation = origin.rotation; //This has nothing to do with the physics going through each other
         //if moving below origin, prevent it
         if (Vector3.Dot((origin.position - transform.position), origin.up) > 0)
         {
