@@ -26,9 +26,6 @@ public class SpectrumVisualizer : MonoBehaviour
     [HideInInspector] public AudioInputMode audioInputMode;
     private AudioInputMode previousAudioInputMode;
 
-    public enum UpdateMode { ManualUpdate, FixedUpdateRate }
-    [SerializeField] public UpdateMode updateMode;
-
     private List<GameObject> deathRow = new List<GameObject>();
 
     [SerializeField] private int totalBars;
