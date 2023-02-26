@@ -16,6 +16,7 @@ public class BarController : MonoBehaviour //proportional–integral–derivative co
 
     private float lastError = 0f;
 
+    private Vector3 prevPos; 
 
     public void InitBar(Transform _target, Transform _origin, Transform _stalk, float _pGain, float _dGain)
     {
@@ -24,17 +25,9 @@ public class BarController : MonoBehaviour //proportional–integral–derivative co
         stalk = _stalk; 
         pGain = _pGain;
         dGain = _dGain;
-        
-        /*
-        GetComponent<ConfigurableJoint>().anchor = Vector3.zero;
-        GetComponent<ConfigurableJoint>().autoConfigureConnectedAnchor = false;
-        GetComponent<ConfigurableJoint>().xMotion = ConfigurableJointMotion.Limited;
-        GetComponent<ConfigurableJoint>().yMotion = ConfigurableJointMotion.Locked;
-        GetComponent<ConfigurableJoint>().zMotion = ConfigurableJointMotion.Locked;
-        GetComponent<ConfigurableJoint>().angularXMotion = ConfigurableJointMotion.Locked;
-        GetComponent<ConfigurableJoint>().angularYMotion = ConfigurableJointMotion.Locked;
-        GetComponent<ConfigurableJoint>().angularZMotion = ConfigurableJointMotion.Locked;
-        */
+
+        GetComponent<Collider>().isTrigger = false;
+        GetComponent<Rigidbody>().isKinematic = true; 
     }
 
     public void SetInitialPosition()
@@ -50,6 +43,12 @@ public class BarController : MonoBehaviour //proportional–integral–derivative co
         if (target == null)
             return;
 
+
+        GetComponent<Rigidbody>().MovePosition(Vector3.Lerp(transform.position, target.position, 0.5f));
+
+        prevPos = transform.position;
+
+        /*
         // Calculate the error between the target position and the current position
         float error = Vector3.Distance(target.position, transform.position);
 
@@ -72,6 +71,7 @@ public class BarController : MonoBehaviour //proportional–integral–derivative co
         {
             GetComponent<Rigidbody>().MovePosition(origin.position);
         }
+        */
     }
 
 
@@ -105,6 +105,16 @@ public class BarController : MonoBehaviour //proportional–integral–derivative co
 
         Material currMatStalk = stalk.GetComponent<Renderer>().sharedMaterial;
         currMatStalk.SetVector("_EmissionColor", currMat.color * length * heightGlowStrength);
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        //Debug.Log("Detected collision: " + other.gameObject.name); 
+    }
+
+    private void OnTriggerStay(Collider other)
+    {
+        
     }
 
 }

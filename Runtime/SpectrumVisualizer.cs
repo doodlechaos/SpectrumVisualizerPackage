@@ -26,6 +26,7 @@ public class SpectrumVisualizer : MonoBehaviour
     [HideInInspector] public AudioInputMode audioInputMode;
     private AudioInputMode previousAudioInputMode;
 
+
     private List<GameObject> deathRow = new List<GameObject>();
 
     [SerializeField] private int totalBars;
@@ -79,6 +80,10 @@ public class SpectrumVisualizer : MonoBehaviour
         CustomOnValidate();
         BarRigidbodiesRoot.gameObject.SetActive(true);
         BarStalksRoot.gameObject.SetActive(true);
+        if (Application.isPlaying && audioInputMode == AudioInputMode.LiveListen)
+        {
+            GetComponent<AudioSource>().Play();
+        }
     }
 
     public void CustomOnValidate()
@@ -94,7 +99,10 @@ public class SpectrumVisualizer : MonoBehaviour
                 string microphoneName = Microphone.devices[0];
                 Debug.Log("Mic name: " + microphoneName);
                 GetComponent<AudioSource>().clip = Microphone.Start(microphoneName, true, 20, AudioSettings.outputSampleRate);
-                GetComponent<AudioSource>().Play();
+            }
+            if(audioInputMode == AudioInputMode.LiveListen)
+            {
+                GetComponent<AudioSource>().clip = inputAudioClip; 
             }
 
             previousAudioInputMode = audioInputMode; 
