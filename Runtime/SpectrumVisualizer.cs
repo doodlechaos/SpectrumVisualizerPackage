@@ -24,7 +24,7 @@ public class SpectrumVisualizer : MonoBehaviour
     public enum AudioInputMode { AudioFile, LiveListen, Microphone } 
     [HideInInspector] public AudioInputMode audioInputMode;
     private AudioInputMode previousAudioInputMode;
-    [SerializeField] public float audioFileTime;
+    private float audioFileTime;
 
 
     private List<GameObject> deathRow = new List<GameObject>();
