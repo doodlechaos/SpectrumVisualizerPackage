@@ -56,10 +56,10 @@ public class BarController : MonoBehaviour //proportional–integral–derivative co
 
         //Update the color emission based on how long the length is
         Material currMat = GetComponent<Renderer>().sharedMaterial;
-        currMat.SetVector("_EmissionColor", currMat.color * length / 5);
+        currMat.SetVector("_EmissiveColor", currMat.color * length / 5);
 
         Material currMatStalk = stalk.GetComponent<Renderer>().sharedMaterial;
-        currMatStalk.SetVector("_EmissionColor", currMat.color * length * heightGlowStrength);
+        currMatStalk.SetVector("_EmissiveColor", currMat.color * length * heightGlowStrength);
     }
 
 }
