@@ -79,6 +79,7 @@ public class SpectrumVisualizer : MonoBehaviour
 
     public void CustomOnValidate()
     {
+        Debug.Log("running custom on validate"); 
         // 1. Build the empty gameobject roots in the hierarchy if they don't exist
         ConstructRootsIfMissing();
 
