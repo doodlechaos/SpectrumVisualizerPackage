@@ -15,14 +15,15 @@ public class SpectrumVisualizer : MonoBehaviour
 
     [HideInInspector] public AudioClip inputAudioClip;
     //[Space(15), Range(64, 8192)]
-    [SerializeField] [HideInInspector] public int visualizerSamples = 64;
+    [HideInInspector][SerializeField] public int visualizerSamples = 64;
+
     [SerializeField] public FFTWindow fttwindow;
 
     [SerializeField][Range(0.0f, 1.0f)] private float spectrumStartFraction;
     [SerializeField] [Range(0.0f, 1.0f)] private float spectrumEndFraction;
 
     public enum AudioInputMode { AudioFile, LiveListen, Microphone } 
-    [HideInInspector] public AudioInputMode audioInputMode;
+    public AudioInputMode audioInputMode;
     private AudioInputMode previousAudioInputMode;
     private float audioFileTime;
 

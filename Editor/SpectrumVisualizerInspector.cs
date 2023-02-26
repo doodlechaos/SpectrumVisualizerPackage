@@ -35,8 +35,8 @@ public class SpectrumVisualizerInspector : Editor
 
         EditorGUILayout.Space();
 
+        EditorGUI.BeginChangeCheck();
         base.OnInspectorGUI();
-
         if (EditorGUI.EndChangeCheck())
         {
             sv.CustomOnValidate();
