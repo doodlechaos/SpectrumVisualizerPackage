@@ -60,8 +60,6 @@ public class SpectrumVisualizer : MonoBehaviour
     private Transform PurgatoryRoot;
 
     public int VisualizerLayer;
-    public Material stalkMaterial;
-    public Material capMaterial;
 
 
     public void Start()
