@@ -13,10 +13,9 @@ public class SpectrumVisualizer : MonoBehaviour
 
     [SerializeField] private bool debugEnabled; 
 
-    public AudioClip inputAudioClip;
-    [Space(15), Range(64, 8192)]
-
-    [SerializeField] public int visualizerSamples = 64;
+    [HideInInspector] public AudioClip inputAudioClip;
+    //[Space(15), Range(64, 8192)]
+    [SerializeField] [HideInInspector] public int visualizerSamples = 64;
     [SerializeField] public FFTWindow fttwindow;
 
     [SerializeField][Range(0.0f, 1.0f)] private float spectrumStartFraction;
@@ -25,6 +24,7 @@ public class SpectrumVisualizer : MonoBehaviour
     public enum AudioInputMode { AudioFile, LiveListen, Microphone } 
     [HideInInspector] public AudioInputMode audioInputMode;
     private AudioInputMode previousAudioInputMode;
+    [SerializeField] public float audioFileTime;
 
 
     private List<GameObject> deathRow = new List<GameObject>();
@@ -41,11 +41,7 @@ public class SpectrumVisualizer : MonoBehaviour
     [SerializeField] private float barCapYDepth;
 
     [SerializeField] private float barTargetLerpFraction;
-    [SerializeField] private float PID_Pgain;
-    [SerializeField] private float PID_Dgain;
-    [SerializeField] private float BarRigidbodyDrag;
     [SerializeField] private float BarRigidbodyMass;
-    [SerializeField] private float overallForceScaler;
 
     [SerializeField] private float sliderHeightLimit;
     private float spectrumSampleMaxValue;
@@ -62,16 +58,10 @@ public class SpectrumVisualizer : MonoBehaviour
     private Transform BarRigidbodiesRoot;
     private Transform PurgatoryRoot;
 
-    [SerializeField] private bool testButton;
-
-    [SerializeField] private float secondsPerFixedUpdate;
-    private float fixedUpdateTimer = 0;
-
     public int VisualizerLayer;
     public Material stalkMaterial;
     public Material capMaterial;
 
-    [SerializeField] public float audioFileTime;
 
     public void Start()
     {
@@ -175,15 +165,13 @@ public class SpectrumVisualizer : MonoBehaviour
         //Update the rigidbodies
         foreach(var barRb in BarRigidbodiesRoot.GetComponentsInChildren<BarController>())
         {
-            barRb.transform.GetComponent<Rigidbody>().drag = BarRigidbodyDrag;
             barRb.transform.GetComponent<Rigidbody>().mass = BarRigidbodyMass;
-            //barRb.transform.GetComponent<Rigidbody>().MoveRotation(barRb.origin.rotation);
             barRb.transform.rotation = barRb.origin.rotation;
 
             barRb.UpdateBarStalk(barHeightGlowStrength);
             if (!Application.isPlaying)
                 continue; 
-            barRb.UpdatePIDForce(secondsPerFixedUpdate, overallForceScaler);
+            barRb.MoveTowardsTarget();
         }
 
     }
@@ -277,7 +265,7 @@ public class SpectrumVisualizer : MonoBehaviour
 
 
             newBarRB.AddComponent<BarController>(); //Automatically adds rigidbody and config joint as well, so must run this first
-            newBarRB.GetComponent<BarController>().InitBar(barTarget.transform, barOrigin.transform, barStalk.transform, PID_Pgain, PID_Dgain);
+            newBarRB.GetComponent<BarController>().InitBar(barTarget.transform, barOrigin.transform, barStalk.transform);
 
             //Make the stalk and the cap not collide with one another
             Physics.IgnoreCollision(barStalk.GetComponent<Collider>(), newBarRB.GetComponent<Collider>());
