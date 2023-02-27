@@ -7,11 +7,11 @@ using UnityEngine;
 
 [ExecuteInEditMode]
 [RequireComponent(typeof(LineRenderer))]
-[RequireComponent(typeof(AudioSource))]
 public class SpectrumVisualizer : MonoBehaviour
 {
 
-    [SerializeField] private bool debugEnabled; 
+    [SerializeField] private bool debugEnabled;
+    [SerializeField] private AudioSource audioSource;
 
     [HideInInspector] public AudioClip inputAudioClip;
     //[Space(15), Range(64, 8192)]
@@ -71,8 +71,19 @@ public class SpectrumVisualizer : MonoBehaviour
         BarStalksRoot.gameObject.SetActive(true);
         if (Application.isPlaying && audioInputMode == AudioInputMode.LiveListen)
         {
-            GetComponent<AudioSource>().Play();
+            //GetComponent<AudioSource>().Play();
         }
+    }
+
+    private void OnDisable()
+    {
+        DisableNonPlaytimeItems(); 
+    }
+
+    private void DisableNonPlaytimeItems()
+    {
+        BarRigidbodiesRoot.gameObject.SetActive(false);
+        BarStalksRoot.gameObject.SetActive(false);
     }
 
     public void CustomOnValidate()
@@ -88,11 +99,16 @@ public class SpectrumVisualizer : MonoBehaviour
             {
                 string microphoneName = Microphone.devices[0];
                 Debug.Log("Mic name: " + microphoneName);
+                //Create the audio componenet if it doesn't exist. 
+                if(gameObject.GetComponent<AudioSource>() == null)
+                {
+                    audioSource = new AudioSource(); 
+                }
                 GetComponent<AudioSource>().clip = Microphone.Start(microphoneName, true, 20, AudioSettings.outputSampleRate);
             }
             if(audioInputMode == AudioInputMode.LiveListen)
             {
-                GetComponent<AudioSource>().clip = inputAudioClip; 
+                //GetComponent<AudioSource>().clip = inputAudioClip; 
             }
 
             previousAudioInputMode = audioInputMode; 
@@ -115,7 +131,6 @@ public class SpectrumVisualizer : MonoBehaviour
         foreach(var barStalk in BarStalksRoot.GetComponentsInChildren<BarController>())
         {
             barStalk.SetInitialPosition();
-
         }
 
         // 7. If the bar width was changed, update it
@@ -139,8 +154,7 @@ public class SpectrumVisualizer : MonoBehaviour
         SetLayerRecursively(gameObject, VisualizerLayer);
         if (!Application.isPlaying)
         {
-            BarRigidbodiesRoot.gameObject.SetActive(false);
-            BarStalksRoot.gameObject.SetActive(false);
+            DisableNonPlaytimeItems(); 
         }
 
         if (!Application.isPlaying)
@@ -158,8 +172,6 @@ public class SpectrumVisualizer : MonoBehaviour
         }
     }
 
-
-
     private void UpdateBars()
     {
         //Update the rigidbodies
@@ -173,7 +185,6 @@ public class SpectrumVisualizer : MonoBehaviour
                 continue; 
             barRb.MoveTowardsTarget();
         }
-
     }
 
     private void ConstructRootsIfMissing()
@@ -407,7 +418,7 @@ public class SpectrumVisualizer : MonoBehaviour
 
         if (audioInputMode == AudioInputMode.LiveListen || audioInputMode == AudioInputMode.Microphone)
         {
-            GetComponent<AudioSource>().GetSpectrumData(spectrumData, 0, fttwindow);
+            audioSource.GetSpectrumData(spectrumData, 0, fttwindow);
         }
         else if (audioInputMode == AudioInputMode.AudioFile)
         {
