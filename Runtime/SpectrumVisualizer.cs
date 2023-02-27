@@ -50,7 +50,10 @@ public class SpectrumVisualizer : MonoBehaviour
 
 
     [SerializeField] private float barHeightMultiplier;
-    [SerializeField] private Gradient barColorGradient;
+
+    [SerializeField] private List<Color> gradientColors;
+    [SerializeField] private float gradientOffsetFraction;
+
     [SerializeField] private float barHeightGlowStrength;
 
     private LineRenderer lr;
@@ -77,11 +80,13 @@ public class SpectrumVisualizer : MonoBehaviour
 
     private void OnDisable()
     {
-        DisableNonPlaytimeItems(); 
+        DisableNonPlaytimeItems(true); 
     }
 
-    private void DisableNonPlaytimeItems()
+    private void DisableNonPlaytimeItems(bool forceFlag)
     {
+        if (!forceFlag && Application.isPlaying)
+            return; 
         BarRigidbodiesRoot.gameObject.SetActive(false);
         BarStalksRoot.gameObject.SetActive(false);
     }
@@ -154,22 +159,40 @@ public class SpectrumVisualizer : MonoBehaviour
         SetLayerRecursively(gameObject, VisualizerLayer);
         if (!Application.isPlaying)
         {
-            DisableNonPlaytimeItems(); 
+            DisableNonPlaytimeItems(false); 
         }
 
         if (!Application.isPlaying)
-            return; 
+            return;
+
+
         //Color all the bars in a spectrum, using temp materials because if not, it causes a memory leak when done in the editor
-        for(int i = 0; i < BarRigidbodiesRoot.childCount; i++)
+        for (int i = 0; i < BarRigidbodiesRoot.childCount; i++)
         {
             var tempMaterial = new Material(BarRigidbodiesRoot.GetChild(i).GetComponent<Renderer>().sharedMaterial);
-            tempMaterial.color = barColorGradient.Evaluate(i / (float)BarRigidbodiesRoot.childCount);
+            tempMaterial.color = GetBarColor(i / (float)BarRigidbodiesRoot.childCount); //barColorGradient.Evaluate(i / (float)BarRigidbodiesRoot.childCount);
             BarRigidbodiesRoot.GetChild(i).GetComponent<Renderer>().sharedMaterial = tempMaterial;
 
             var tempMaterial2 = new Material(BarStalksRoot.GetChild(i).GetComponent<Renderer>().sharedMaterial);
-            tempMaterial2.color = barColorGradient.Evaluate(i / (float)BarRigidbodiesRoot.childCount);
+            tempMaterial2.color = GetBarColor(i / (float)BarRigidbodiesRoot.childCount); //barColorGradient.Evaluate(i / (float)BarRigidbodiesRoot.childCount);
             BarStalksRoot.GetChild(i).GetComponent<Renderer>().sharedMaterial = tempMaterial;
         }
+    }
+
+    private Color GetBarColor(float t)
+    {
+        t += Math.Abs(gradientOffsetFraction); 
+        int totalColors = gradientColors.Count; 
+        float colorFrac = 1 / (float)totalColors;
+
+        int index = Mathf.FloorToInt(totalColors * t);
+        float lerpAmount = (t % colorFrac) / colorFrac; 
+
+        index = index % totalColors;
+
+        Color gradientColor = Color.Lerp(gradientColors[index], gradientColors[(index + 1) % totalColors], lerpAmount);
+
+        return gradientColor;
     }
 
     private void UpdateBars()
