@@ -51,7 +51,16 @@ public class SpectrumVisualizer : MonoBehaviour
 
     [SerializeField] private float barHeightMultiplier;
 
-    [SerializeField] private List<Color> gradientColors;
+    [SerializeField] private Gradient barColorGradientPrimary;
+    [SerializeField] private Gradient barColorGradientSecondary;
+    [SerializeField] private bool enableSecondaryGradient;
+    [SerializeField] private bool enable3ColorWrappableOverride;
+
+    private List<Color> gradientColors; //Can't add animation keyframes to List
+    [SerializeField] private Color gradientColor1;
+    [SerializeField] private Color gradientColor2;
+    [SerializeField] private Color gradientColor3;
+
     [SerializeField] private float gradientOffsetFraction;
 
     [SerializeField] private float barHeightGlowStrength;
@@ -170,17 +179,19 @@ public class SpectrumVisualizer : MonoBehaviour
         for (int i = 0; i < BarRigidbodiesRoot.childCount; i++)
         {
             var tempMaterial = new Material(BarRigidbodiesRoot.GetChild(i).GetComponent<Renderer>().sharedMaterial);
-            tempMaterial.color = GetBarColor(i / (float)BarRigidbodiesRoot.childCount); //barColorGradient.Evaluate(i / (float)BarRigidbodiesRoot.childCount);
+            Gradient currGradient = (enableSecondaryGradient) ? barColorGradientSecondary : barColorGradientPrimary; 
+            tempMaterial.color = (enable3ColorWrappableOverride) ? GetBarColor(i / (float)BarRigidbodiesRoot.childCount) : currGradient.Evaluate(i / (float)BarRigidbodiesRoot.childCount);
             BarRigidbodiesRoot.GetChild(i).GetComponent<Renderer>().sharedMaterial = tempMaterial;
 
             var tempMaterial2 = new Material(BarStalksRoot.GetChild(i).GetComponent<Renderer>().sharedMaterial);
-            tempMaterial2.color = GetBarColor(i / (float)BarRigidbodiesRoot.childCount); //barColorGradient.Evaluate(i / (float)BarRigidbodiesRoot.childCount);
+            tempMaterial2.color = (enable3ColorWrappableOverride) ? GetBarColor(i / (float)BarRigidbodiesRoot.childCount) : currGradient.Evaluate(i / (float)BarRigidbodiesRoot.childCount);
             BarStalksRoot.GetChild(i).GetComponent<Renderer>().sharedMaterial = tempMaterial;
         }
     }
 
     private Color GetBarColor(float t)
     {
+        gradientColors = new List<Color>() { gradientColor1, gradientColor2, gradientColor3 }; 
         t += Math.Abs(gradientOffsetFraction); 
         int totalColors = gradientColors.Count; 
         float colorFrac = 1 / (float)totalColors;
