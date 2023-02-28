@@ -94,10 +94,12 @@ public class SpectrumVisualizer : MonoBehaviour
 
     private void DisableNonPlaytimeItems(bool forceFlag)
     {
+        /*
         if (!forceFlag && Application.isPlaying)
             return; 
         BarRigidbodiesRoot.gameObject.SetActive(false);
         BarStalksRoot.gameObject.SetActive(false);
+        */
     }
 
     public void CustomOnValidate()
