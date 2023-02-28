@@ -56,7 +56,9 @@ public class SpectrumVisualizer : MonoBehaviour
     [SerializeField] private Gradient barColorGradientPrimary;
     [SerializeField] private Gradient barColorGradientSecondary;
     [SerializeField] private bool enableSecondaryGradient;
+    private bool prevEnableSecondaryGradient;
     [SerializeField] private bool enable3ColorWrappableOverride;
+    private bool prevEnable3ColorWrappableOverride;
 
     private List<Color> gradientColors; //Can't add animation keyframes to List
     [SerializeField] private Color gradientColor1;
@@ -64,6 +66,7 @@ public class SpectrumVisualizer : MonoBehaviour
     [SerializeField] private Color gradientColor3;
 
     [SerializeField] private float gradientOffsetFraction;
+    private float prevGradientOffsetFraction;
 
     [SerializeField] private float barHeightGlowStrength;
 
@@ -193,20 +196,7 @@ public class SpectrumVisualizer : MonoBehaviour
         if (!Application.isPlaying)
             return;
 
-
-        //Color all the bars in a spectrum, using temp materials because if not, it causes a memory leak when done in the editor
-        for (int i = 0; i < BarRigidbodiesRoot.childCount; i++)
-        {
-            var tempMaterial = new Material(BarRigidbodiesRoot.GetChild(i).GetComponent<Renderer>().material);
-            Gradient currGradient = (enableSecondaryGradient) ? barColorGradientSecondary : barColorGradientPrimary; 
-            tempMaterial.color = (enable3ColorWrappableOverride) ? GetBarColor(i / (float)BarRigidbodiesRoot.childCount) : currGradient.Evaluate(i / (float)BarRigidbodiesRoot.childCount);
-            BarRigidbodiesRoot.GetChild(i).GetComponent<Renderer>().material = tempMaterial;
-
-            var tempMaterial2 = new Material(BarStalksRoot.GetChild(i).GetComponent<Renderer>().material);
-            tempMaterial2.color = (enable3ColorWrappableOverride) ? GetBarColor(i / (float)BarRigidbodiesRoot.childCount) : currGradient.Evaluate(i / (float)BarRigidbodiesRoot.childCount);
-            BarStalksRoot.GetChild(i).GetComponent<Renderer>().material = tempMaterial;
-        }
-
+        UpdateBarColors();
     }
 
     private Color GetBarColor(float t)
@@ -228,8 +218,11 @@ public class SpectrumVisualizer : MonoBehaviour
 
     private void UpdateBars()
     {
+        //Check for coloring modifications
+        UpdateBarColors(); 
+
         //Update the rigidbodies
-        foreach(var barRb in BarRigidbodiesRoot.GetComponentsInChildren<BarController>())
+        foreach (var barRb in BarRigidbodiesRoot.GetComponentsInChildren<BarController>())
         {
             barRb.transform.GetComponent<Rigidbody>().mass = BarRigidbodyMass;
             barRb.transform.rotation = barRb.origin.rotation;
@@ -238,6 +231,31 @@ public class SpectrumVisualizer : MonoBehaviour
             if (!Application.isPlaying)
                 continue; 
             barRb.MoveTowardsTarget();
+        }
+    }
+
+    private void UpdateBarColors()
+    {
+        if(enableSecondaryGradient != prevEnableSecondaryGradient || 
+           enable3ColorWrappableOverride != prevEnable3ColorWrappableOverride ||
+           gradientOffsetFraction != prevGradientOffsetFraction)
+        {
+            //Color all the bars in a spectrum, using temp materials because if not, it causes a memory leak when done in the editor
+            for (int i = 0; i < BarRigidbodiesRoot.childCount; i++)
+            {
+                var tempMaterial = new Material(BarRigidbodiesRoot.GetChild(i).GetComponent<Renderer>().material);
+                Gradient currGradient = (enableSecondaryGradient) ? barColorGradientSecondary : barColorGradientPrimary;
+                tempMaterial.color = (enable3ColorWrappableOverride) ? GetBarColor(i / (float)BarRigidbodiesRoot.childCount) : currGradient.Evaluate(i / (float)BarRigidbodiesRoot.childCount);
+                BarRigidbodiesRoot.GetChild(i).GetComponent<Renderer>().material = tempMaterial;
+
+                var tempMaterial2 = new Material(BarStalksRoot.GetChild(i).GetComponent<Renderer>().material);
+                tempMaterial2.color = (enable3ColorWrappableOverride) ? GetBarColor(i / (float)BarRigidbodiesRoot.childCount) : currGradient.Evaluate(i / (float)BarRigidbodiesRoot.childCount);
+                BarStalksRoot.GetChild(i).GetComponent<Renderer>().material = tempMaterial;
+            }
+
+            prevEnableSecondaryGradient = enableSecondaryGradient;
+            prevEnable3ColorWrappableOverride = enable3ColorWrappableOverride;
+            prevGradientOffsetFraction = gradientOffsetFraction; 
         }
     }
 
