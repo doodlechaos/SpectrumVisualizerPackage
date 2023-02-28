@@ -184,6 +184,12 @@ public class SpectrumVisualizer : MonoBehaviour
             DisableNonPlaytimeItems(false); 
         }
 
+        if (flipLineButton)
+        {
+            FlipLine();
+            flipLineButton = false;
+        }
+
         if (!Application.isPlaying)
             return;
 
@@ -201,11 +207,6 @@ public class SpectrumVisualizer : MonoBehaviour
             BarStalksRoot.GetChild(i).GetComponent<Renderer>().sharedMaterial = tempMaterial;
         }
 
-        if (flipLineButton)
-        {
-            FlipLine();
-            flipLineButton = false; 
-        }
     }
 
     private Color GetBarColor(float t)
