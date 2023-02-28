@@ -196,7 +196,7 @@ public class SpectrumVisualizer : MonoBehaviour
         if (!Application.isPlaying)
             return;
 
-        UpdateBarColors();
+        UpdateBarColors(true);
     }
 
     private Color GetBarColor(float t)
@@ -219,7 +219,7 @@ public class SpectrumVisualizer : MonoBehaviour
     private void UpdateBars()
     {
         //Check for coloring modifications
-        UpdateBarColors(); 
+        UpdateBarColors(false); 
 
         //Update the rigidbodies
         foreach (var barRb in BarRigidbodiesRoot.GetComponentsInChildren<BarController>())
@@ -234,9 +234,10 @@ public class SpectrumVisualizer : MonoBehaviour
         }
     }
 
-    private void UpdateBarColors()
+    private void UpdateBarColors(bool forceUpdate)
     {
-        if(enableSecondaryGradient != prevEnableSecondaryGradient || 
+        if(forceUpdate ||
+           enableSecondaryGradient != prevEnableSecondaryGradient || 
            enable3ColorWrappableOverride != prevEnable3ColorWrappableOverride ||
            gradientOffsetFraction != prevGradientOffsetFraction)
         {
