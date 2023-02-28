@@ -11,6 +11,8 @@ public class SpectrumVisualizer : MonoBehaviour
 {
 
     [SerializeField] private bool debugEnabled;
+    [SerializeField] private bool flipLineButton;
+
     [SerializeField] private AudioSource audioSource;
 
     [HideInInspector] public AudioClip inputAudioClip;
@@ -102,6 +104,15 @@ public class SpectrumVisualizer : MonoBehaviour
         */
     }
 
+    private void FlipLine()
+    {
+        LineRenderer lr = GetComponent<LineRenderer>();
+        Vector3[] linePositions = new Vector3[lr.positionCount];
+        lr.GetPositions(linePositions);
+        linePositions = linePositions.Reverse().ToArray();
+        lr.SetPositions(linePositions); 
+    }
+
     public void CustomOnValidate()
     {
         Debug.Log("running custom on validate"); 
@@ -188,6 +199,12 @@ public class SpectrumVisualizer : MonoBehaviour
             var tempMaterial2 = new Material(BarStalksRoot.GetChild(i).GetComponent<Renderer>().sharedMaterial);
             tempMaterial2.color = (enable3ColorWrappableOverride) ? GetBarColor(i / (float)BarRigidbodiesRoot.childCount) : currGradient.Evaluate(i / (float)BarRigidbodiesRoot.childCount);
             BarStalksRoot.GetChild(i).GetComponent<Renderer>().sharedMaterial = tempMaterial;
+        }
+
+        if (flipLineButton)
+        {
+            FlipLine();
+            flipLineButton = false; 
         }
     }
 
