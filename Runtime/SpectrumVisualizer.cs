@@ -197,14 +197,14 @@ public class SpectrumVisualizer : MonoBehaviour
         //Color all the bars in a spectrum, using temp materials because if not, it causes a memory leak when done in the editor
         for (int i = 0; i < BarRigidbodiesRoot.childCount; i++)
         {
-            var tempMaterial = new Material(BarRigidbodiesRoot.GetChild(i).GetComponent<Renderer>().sharedMaterial);
+            var tempMaterial = new Material(BarRigidbodiesRoot.GetChild(i).GetComponent<Renderer>().material);
             Gradient currGradient = (enableSecondaryGradient) ? barColorGradientSecondary : barColorGradientPrimary; 
             tempMaterial.color = (enable3ColorWrappableOverride) ? GetBarColor(i / (float)BarRigidbodiesRoot.childCount) : currGradient.Evaluate(i / (float)BarRigidbodiesRoot.childCount);
-            BarRigidbodiesRoot.GetChild(i).GetComponent<Renderer>().sharedMaterial = tempMaterial;
+            BarRigidbodiesRoot.GetChild(i).GetComponent<Renderer>().material = tempMaterial;
 
-            var tempMaterial2 = new Material(BarStalksRoot.GetChild(i).GetComponent<Renderer>().sharedMaterial);
+            var tempMaterial2 = new Material(BarStalksRoot.GetChild(i).GetComponent<Renderer>().material);
             tempMaterial2.color = (enable3ColorWrappableOverride) ? GetBarColor(i / (float)BarRigidbodiesRoot.childCount) : currGradient.Evaluate(i / (float)BarRigidbodiesRoot.childCount);
-            BarStalksRoot.GetChild(i).GetComponent<Renderer>().sharedMaterial = tempMaterial;
+            BarStalksRoot.GetChild(i).GetComponent<Renderer>().material = tempMaterial;
         }
 
     }
@@ -563,7 +563,7 @@ public class SpectrumVisualizer : MonoBehaviour
                 max = sampleValue;
             }
         }
-        Debug.LogError("min: " + min + " max: " + max); 
+        //Debug.LogError("min: " + min + " max: " + max); 
     }
 
     private void SetLayerRecursively(GameObject obj, int layer)
