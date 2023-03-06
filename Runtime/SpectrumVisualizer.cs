@@ -3,6 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor;
 using UnityEngine;
 
 [ExecuteInEditMode]
@@ -92,19 +93,16 @@ public class SpectrumVisualizer : MonoBehaviour
         }
     }
 
-    private void OnDisable()
+    [MenuItem("MyMenu/Change Material Color")]
+    static void ChangeColor()
     {
-        DisableNonPlaytimeItems(true); 
-    }
-
-    private void DisableNonPlaytimeItems(bool forceFlag)
-    {
-        /*
-        if (!forceFlag && Application.isPlaying)
-            return; 
-        BarRigidbodiesRoot.gameObject.SetActive(false);
-        BarStalksRoot.gameObject.SetActive(false);
-        */
+        Material mat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/MyMaterial.mat");
+        if (mat != null)
+        {
+            mat.color = Color.red;
+            EditorUtility.SetDirty(mat);
+            AssetDatabase.SaveAssets();
+        }
     }
 
     private void FlipLine()
@@ -118,7 +116,7 @@ public class SpectrumVisualizer : MonoBehaviour
 
     public void CustomOnValidate()
     {
-        Debug.Log("running custom on validate"); 
+        //Debug.Log("running custom on validate"); 
         // 1. Build the empty gameobject roots in the hierarchy if they don't exist
         ConstructRootsIfMissing();
 
@@ -182,10 +180,7 @@ public class SpectrumVisualizer : MonoBehaviour
 
         // Make sure that all the gameobjects are set to the visualizer layer for no self collision:
         SetLayerRecursively(gameObject, VisualizerLayer);
-        if (!Application.isPlaying)
-        {
-            DisableNonPlaytimeItems(false); 
-        }
+
 
         if (flipLineButton)
         {
@@ -236,21 +231,30 @@ public class SpectrumVisualizer : MonoBehaviour
 
     private void UpdateBarColors(bool forceUpdate)
     {
+        //Can't change the colors unless we're in play mode
+        if (!Application.isPlaying)
+            return; 
+
         if(forceUpdate ||
            enableSecondaryGradient != prevEnableSecondaryGradient || 
            enable3ColorWrappableOverride != prevEnable3ColorWrappableOverride ||
            gradientOffsetFraction != prevGradientOffsetFraction)
         {
+            //Debug.Log("updating bar colors"); 
             //Color all the bars in a spectrum, using temp materials because if not, it causes a memory leak when done in the editor
             for (int i = 0; i < BarRigidbodiesRoot.childCount; i++)
             {
-                var tempMaterial = new Material(BarRigidbodiesRoot.GetChild(i).GetComponent<Renderer>().material);
+                var tempMaterial = BarRigidbodiesRoot.GetChild(i).GetComponent<Renderer>().material; 
                 Gradient currGradient = (enableSecondaryGradient) ? barColorGradientSecondary : barColorGradientPrimary;
                 tempMaterial.color = (enable3ColorWrappableOverride) ? GetBarColor(i / (float)BarRigidbodiesRoot.childCount) : currGradient.Evaluate(i / (float)BarRigidbodiesRoot.childCount);
+                EditorUtility.SetDirty(tempMaterial);
+
                 BarRigidbodiesRoot.GetChild(i).GetComponent<Renderer>().material = tempMaterial;
 
-                var tempMaterial2 = new Material(BarStalksRoot.GetChild(i).GetComponent<Renderer>().material);
+                var tempMaterial2 = BarStalksRoot.GetChild(i).GetComponent<Renderer>().material;
                 tempMaterial2.color = (enable3ColorWrappableOverride) ? GetBarColor(i / (float)BarRigidbodiesRoot.childCount) : currGradient.Evaluate(i / (float)BarRigidbodiesRoot.childCount);
+                EditorUtility.SetDirty(tempMaterial2);
+
                 BarStalksRoot.GetChild(i).GetComponent<Renderer>().material = tempMaterial;
             }
 

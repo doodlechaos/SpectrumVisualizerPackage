@@ -41,8 +41,8 @@ public class BarController : MonoBehaviour //proportional–integral–derivative co
     {
         var dropDown = (origin.up * transform.localScale.y / 2);
         stalk.transform.rotation = origin.rotation; //This has nothing to do with the physics going through each other
-        //if moving below origin, prevent it
-        if (Vector3.Dot((origin.position - transform.position), origin.up) > 0)
+        //if moving below origin or in edit mode, just set the stalk position and return
+        if (Vector3.Dot((origin.position - transform.position), origin.up) > 0 || !Application.isPlaying)
         {
             stalk.transform.position = origin.position - dropDown;
             stalk.localScale = new Vector3(stalk.localScale.x, transform.localScale.y, stalk.localScale.z);
