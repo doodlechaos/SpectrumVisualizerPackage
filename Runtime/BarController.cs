@@ -13,7 +13,7 @@ public class BarController : MonoBehaviour //proportional–integral–derivative co
 
 
     private Vector3 prevPos;
-    private Transform spectrumVisualizerRoot;
+    public Transform spectrumVisualizerRoot;
     private SpectrumVisualizer sv;
 
     public void Start()
@@ -47,10 +47,11 @@ public class BarController : MonoBehaviour //proportional–integral–derivative co
 
     public void UpdateBarStalk(float heightGlowStrength)
     {
+        Vector3 rbPos = GetComponent<Rigidbody>().position;
         var dropDown = (origin.up * transform.localScale.y / 2);
         stalk.transform.rotation = origin.rotation; //This has nothing to do with the physics going through each other
         //if moving below origin or in edit mode, just set the stalk position and return
-        if (Vector3.Dot((origin.position - transform.position), origin.up) > 0 || !Application.isPlaying)
+        if (Vector3.Dot((origin.position - rbPos), origin.up) > 0 || !Application.isPlaying)
         {
             stalk.transform.position = origin.position - dropDown;
             stalk.localScale = new Vector3(stalk.localScale.x, transform.localScale.y, stalk.localScale.z);
@@ -58,9 +59,9 @@ public class BarController : MonoBehaviour //proportional–integral–derivative co
         }
         //Debug.Log("updating bar stalk");
         //Else if above, change scale and position accordingly
-        float length = Vector3.Distance(origin.position, transform.position);
+        float length = Vector3.Distance(origin.position, rbPos);
         stalk.localScale = new Vector3(stalk.localScale.x, length + transform.localScale.y, stalk.localScale.z);
-        stalk.transform.position = Vector3.Lerp(origin.position, transform.position, 0.5f) - dropDown; //Should be half way between the origin and cap
+        stalk.transform.position = Vector3.Lerp(origin.position, rbPos, 0.5f) - dropDown; //Should be half way between the origin and cap
 
         //Update the color emission based on how long the length is
         Material currMat = GetComponent<Renderer>().sharedMaterial;
