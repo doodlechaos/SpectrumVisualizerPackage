@@ -86,6 +86,8 @@ public class SpectrumVisualizer : MonoBehaviour
         CustomOnValidate();
         BarRigidbodiesRoot.gameObject.SetActive(true);
         BarStalksRoot.gameObject.SetActive(true);
+        Debug.LogError("total audio clip channels: " + audioSource.clip.channels + " isplaying: " + Application.isPlaying + " inputMode: " + audioInputMode);
+
         if (Application.isPlaying && audioInputMode == AudioInputMode.LiveListen)
         {
             //GetComponent<AudioSource>().Play();
