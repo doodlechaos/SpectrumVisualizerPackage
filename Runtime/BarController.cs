@@ -13,18 +13,19 @@ public class BarController : MonoBehaviour //proportional–integral–derivative co
 
 
     private Vector3 prevPos;
+    private Transform spectrumVisualizerRoot;
     private SpectrumVisualizer sv;
 
     public void Start()
     {
-        sv = transform.parent.parent.GetComponent<SpectrumVisualizer>();
+        sv = spectrumVisualizerRoot.GetComponent<SpectrumVisualizer>();
     }
-    public void InitBar(Transform _target, Transform _origin, Transform _stalk)
+    public void InitBar(Transform _target, Transform _origin, Transform _stalk, Transform _spectrumVisualizerRoot)
     {
         target = _target;
         origin = _origin;
         stalk = _stalk;
-        sv = transform.parent.parent.GetComponent<SpectrumVisualizer>();
+        spectrumVisualizerRoot = _spectrumVisualizerRoot;
 
         GetComponent<Rigidbody>().isKinematic = true; 
     }

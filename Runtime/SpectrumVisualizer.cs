@@ -76,7 +76,7 @@ public class SpectrumVisualizer : MonoBehaviour
     private LineRenderer lr;
     private Transform BarOriginsRoot;
     private Transform BarStalksRoot;
-    private Transform BarRigidbodiesRoot;
+    public Transform BarRigidbodiesRoot;
     private Transform PurgatoryRoot;
 
     public int VisualizerLayer;
@@ -282,19 +282,8 @@ public class SpectrumVisualizer : MonoBehaviour
         {
             BarOriginsRoot = transform.GetChild(0);
         }
-        if (transform.childCount <= 1 || transform.GetChild(1).name != "BarRigidbodiesRoot")
-        {
-            BarRigidbodiesRoot = new GameObject("BarRigidbodiesRoot").transform;
-            BarRigidbodiesRoot.position = Vector3.zero;
-            BarRigidbodiesRoot.localScale = Vector3.one;
-            BarRigidbodiesRoot.SetParent(transform);
-        }
-        else
-        {
-            BarRigidbodiesRoot = transform.GetChild(1);
-        }
         //Build the roots if they don't exist yet
-        if (transform.childCount <= 2 || transform.GetChild(2).name != "BarStalksRoot")
+        if (transform.childCount <= 1 || transform.GetChild(1).name != "BarStalksRoot")
         {
             BarStalksRoot = new GameObject("BarStalksRoot").transform;
             BarStalksRoot.position = Vector3.zero;
@@ -303,9 +292,9 @@ public class SpectrumVisualizer : MonoBehaviour
         }
         else
         {
-            BarStalksRoot = transform.GetChild(2);
+            BarStalksRoot = transform.GetChild(1);
         }
-        if (transform.childCount <= 3 || transform.GetChild(3).name != "PurgatoryRoot")
+        if (transform.childCount <= 2 || transform.GetChild(2).name != "PurgatoryRoot")
         {
             PurgatoryRoot = new GameObject("PurgatoryRoot").transform;
             PurgatoryRoot.SetParent(transform);
@@ -314,7 +303,7 @@ public class SpectrumVisualizer : MonoBehaviour
         }
         else
         {
-            PurgatoryRoot = transform.GetChild(3);
+            PurgatoryRoot = transform.GetChild(2);
         }
     }
 
@@ -357,7 +346,7 @@ public class SpectrumVisualizer : MonoBehaviour
 
 
             newBarRB.AddComponent<BarController>(); //Automatically adds rigidbody and config joint as well, so must run this first
-            newBarRB.GetComponent<BarController>().InitBar(barTarget.transform, barOrigin.transform, barStalk.transform);
+            newBarRB.GetComponent<BarController>().InitBar(barTarget.transform, barOrigin.transform, barStalk.transform, transform);
 
             //Make the stalk and the cap not collide with one another
             Physics.IgnoreCollision(barStalk.GetComponent<Collider>(), newBarRB.GetComponent<Collider>());
