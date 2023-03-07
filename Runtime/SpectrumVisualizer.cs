@@ -14,7 +14,7 @@ public class SpectrumVisualizer : MonoBehaviour
     [SerializeField] private bool debugEnabled;
     [SerializeField] private bool flipLineButton;
 
-    [SerializeField] private AudioSource audioSource;
+    [SerializeField] public AudioSource audioSource;
 
     [HideInInspector] public AudioClip inputAudioClip;
     //[Space(15), Range(64, 8192)]
@@ -47,7 +47,6 @@ public class SpectrumVisualizer : MonoBehaviour
     [SerializeField] private float barTargetLerpFraction;
     [SerializeField] private float BarRigidbodyMass;
 
-    [SerializeField] private float sliderHeightLimit;
     private float spectrumSampleMaxValue;
     private float spectrumSampleMinValue;
 
