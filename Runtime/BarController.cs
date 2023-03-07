@@ -40,7 +40,7 @@ public class BarController : MonoBehaviour //proportional–integral–derivative co
 
     public void MoveTowardsTarget()
     {
-        Debug.Log("moving towards target");
+        //Debug.Log("moving towards target");
         GetComponent<Rigidbody>().MovePosition(Vector3.Lerp(transform.position, target.position, (sv == null) ? 0.5f : sv.rigidbodyLerpFraction));
     }
 
@@ -56,7 +56,7 @@ public class BarController : MonoBehaviour //proportional–integral–derivative co
             stalk.localScale = new Vector3(stalk.localScale.x, transform.localScale.y, stalk.localScale.z);
             return; 
         }
-        Debug.Log("updating bar stalk");
+        //Debug.Log("updating bar stalk");
         //Else if above, change scale and position accordingly
         float length = Vector3.Distance(origin.position, transform.position);
         stalk.localScale = new Vector3(stalk.localScale.x, length + transform.localScale.y, stalk.localScale.z);
