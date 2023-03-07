@@ -41,7 +41,7 @@ public class BarController : MonoBehaviour //proportional–integral–derivative co
     public void MoveTowardsTarget()
     {
         //Debug.Log("moving towards target");
-        GetComponent<Rigidbody>().MovePosition(Vector3.Lerp(transform.position, target.position, (sv == null) ? 0.5f : sv.rigidbodyLerpFraction));
+        GetComponent<Rigidbody>().MovePosition(Vector3.Lerp(transform.position, target.position, (sv == null) ? 1f : sv.rigidbodyLerpFraction));
     }
 
 
