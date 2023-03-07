@@ -47,6 +47,7 @@ public class SpectrumVisualizer : MonoBehaviour
     [SerializeField] private float barCapYDepth;
 
     [SerializeField] private float barTargetLerpFraction;
+    [SerializeField] public float rigidbodyLerpFraction; 
     [SerializeField] private float BarRigidbodyMass;
 
     private float spectrumSampleMaxValue;

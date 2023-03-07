@@ -12,13 +12,19 @@ public class BarController : MonoBehaviour //proportional–integral–derivative co
     public Transform stalk; 
 
 
-    private Vector3 prevPos; 
+    private Vector3 prevPos;
+    private SpectrumVisualizer sv;
 
+    public void Start()
+    {
+        sv = transform.parent.parent.GetComponent<SpectrumVisualizer>();
+    }
     public void InitBar(Transform _target, Transform _origin, Transform _stalk)
     {
         target = _target;
         origin = _origin;
-        stalk = _stalk; 
+        stalk = _stalk;
+        sv = transform.parent.parent.GetComponent<SpectrumVisualizer>();
 
         GetComponent<Rigidbody>().isKinematic = true; 
     }
@@ -33,7 +39,7 @@ public class BarController : MonoBehaviour //proportional–integral–derivative co
 
     public void MoveTowardsTarget()
     {
-        GetComponent<Rigidbody>().MovePosition(Vector3.Lerp(transform.position, target.position, 0.5f));
+        GetComponent<Rigidbody>().MovePosition(Vector3.Lerp(transform.position, target.position, (sv == null) ? 0.5f : sv.rigidbodyLerpFraction));
     }
 
 
