@@ -22,8 +22,10 @@ public class SpectrumVisualizer : MonoBehaviour
 
     [SerializeField] public FFTWindow fttwindow;
 
-    [SerializeField][Range(0.0f, 1.0f)] private float spectrumStartFraction;
-    [SerializeField] [Range(0.0f, 1.0f)] private float spectrumEndFraction;
+    //[SerializeField][Range(0.0f, 1.0f)] private float spectrumStartFraction;
+    //[SerializeField] [Range(0.0f, 1.0f)] private float spectrumEndFraction;
+    [SerializeField] [Range(0.0f, 22050.0f)] private float minFrequency = 20;
+    [SerializeField] [Range(0.0f, 22050.0f)] private float maxFrequency = 400;
 
     public enum AudioInputMode { AudioFile, LiveListen, Microphone } 
     public AudioInputMode audioInputMode;
@@ -530,11 +532,15 @@ public class SpectrumVisualizer : MonoBehaviour
         //For both input modes, we must map to the bars
 
         //Trim the edges of the spectrum data as desired
-        int startIndex = (int)(spectrumStartFraction * spectrumData.Length);
-        int stopIndex = (int)(spectrumEndFraction * spectrumData.Length);
+        //int startIndex = (int)(spectrumStartFraction * spectrumData.Length);
+        //int stopIndex = (int)(spectrumEndFraction * spectrumData.Length);
+        // Calculate the index range of the frequency range
+        float sampleRate = AudioSettings.outputSampleRate;
+        int minIndex = Mathf.RoundToInt(minFrequency / sampleRate * spectrumData.Length);
+        int maxIndex = Mathf.RoundToInt(maxFrequency / sampleRate * spectrumData.Length);
 
-        float[] spectrumSubset = new float[stopIndex - startIndex];
-        System.Array.Copy(spectrumData, startIndex, spectrumSubset, 0, spectrumSubset.Length);
+        float[] spectrumSubset = new float[maxIndex - minIndex];
+        Array.Copy(spectrumData, minIndex, spectrumSubset, 0, spectrumSubset.Length);
 
         //Move the bars based on the spectrum data
         for (int i = 0; i < BarOriginsRoot.childCount; i++)
