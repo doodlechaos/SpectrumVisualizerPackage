@@ -549,7 +549,7 @@ public class SpectrumVisualizer : MonoBehaviour
             var currOrigin = BarOriginsRoot.GetChild(i);
             // t is the percent index of the spectrum data we are sampling. 
             float t = i / (float)BarRigidbodiesRoot.childCount;
-            int spectrumIndex = Mathf.FloorToInt(spectrumSubset.Length * t);
+            int spectrumIndex = Mathf.RoundToInt(spectrumSubset.Length * t);
             //Debug.Log("spectrumData.length: " + spectrumData.Length + " SpectrumIndex: " + spectrumIndex);
             float spectrumSample = spectrumData[spectrumIndex];
 
