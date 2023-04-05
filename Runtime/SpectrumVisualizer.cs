@@ -398,7 +398,7 @@ public class SpectrumVisualizer : MonoBehaviour
             float t = b / (float)BarOriginsRoot.childCount;
 
             //Set the bar origin to the correct position
-            currBarOrigin.transform.position = GetPointOnLineRenderer(lr, totalLineLength, t);
+            currBarOrigin.transform.position = GetPointOnLineRenderer(lr, totalLineLength, t) + transform.position;
 
             //and rotate it based on the normal to the line at that point
             Vector3 normal = GetNormalOnLineRenderer(lr, totalLineLength, t);
