@@ -39,6 +39,7 @@ public class SpectrumVisualizer : MonoBehaviour
     [SerializeField] private float barDepth;
     private float prevBarDepth;
     public PhysicMaterial barPhysicsMat;
+    public Material barMaterial;
 
     [SerializeField] private float barWidth;
     private float prevBarWidth;
@@ -89,7 +90,7 @@ public class SpectrumVisualizer : MonoBehaviour
         CustomOnValidate();
         BarRigidbodiesRoot.gameObject.SetActive(true);
         BarStalksRoot.gameObject.SetActive(true);
-        Debug.LogError("total audio clip channels: " + audioSource.clip.channels + " isplaying: " + Application.isPlaying + " inputMode: " + audioInputMode);
+        Debug.Log("total audio clip channels: " + audioSource.clip.channels + " isplaying: " + Application.isPlaying + " inputMode: " + audioInputMode);
 
         if (Application.isPlaying && audioInputMode == AudioInputMode.LiveListen)
         {
@@ -97,6 +98,7 @@ public class SpectrumVisualizer : MonoBehaviour
         }
     }
 
+    /*
     [MenuItem("MyMenu/Change Material Color")]
     static void ChangeColor()
     {
@@ -108,6 +110,7 @@ public class SpectrumVisualizer : MonoBehaviour
             AssetDatabase.SaveAssets();
         }
     }
+    */
 
     private void FlipLine()
     {
@@ -336,13 +339,14 @@ public class SpectrumVisualizer : MonoBehaviour
             barStalk.transform.localScale = Vector3.one;
             barStalk.transform.position = Vector3.zero;
             barStalk.transform.SetParent(BarStalksRoot);
+            barStalk.GetComponent<Renderer>().material = barMaterial;
 
             //Create the rigidbody cap of the bar
             GameObject newBarRB = GameObject.CreatePrimitive(PrimitiveType.Cube);
             newBarRB.name = "barRB_" + currIndex;
             newBarRB.transform.SetParent(BarRigidbodiesRoot);
             newBarRB.transform.rotation = Quaternion.Euler(0, 0, 0);
-
+            newBarRB.GetComponent<Renderer>().material = barMaterial;
 
 
             newBarRB.AddComponent<BarController>(); //Automatically adds rigidbody and config joint as well, so must run this first
